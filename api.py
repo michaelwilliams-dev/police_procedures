@@ -1,8 +1,10 @@
-import os
 import json
 import zipfile
 import openai
-openai.api_key = os.getenv("OPENAI_API_KEY")
+import os
+
+client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))  # ✅ This is correct
+
 import faiss
 import numpy as np
 from flask import Flask, request, jsonify
