@@ -1,9 +1,9 @@
 import os
 import json
 import zipfile
-import openai
+from openai import OpenAI
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-openai.api_key = os.getenv("OPENAI_API_KEY")  # ✅ Works with SDK v0.x
 
 import faiss
 import numpy as np
@@ -52,7 +52,7 @@ def get_chunk_text(fname):
 
 # Utility: Create OpenAI embedding
 def get_embedding(text):
-    response = openai.embeddings.create(
+    response = client.embeddings.create(
         input=[text.replace("\n", " ")],
         model="text-embedding-3-small"
     )
@@ -72,7 +72,7 @@ Answer the question below using the provided reference material.
 
 ### ANSWER:"""
 
-    completion = openai.chat.completions.create(
+    completion = client.chat.completions.create(
         model="gpt-4",
         messages=[{"role": "user", "content": prompt}],
         temperature=0.3
