@@ -1,14 +1,15 @@
 import os
 import json
 import zipfile
-from openai import OpenAI  # ✅ Only once
+import base64
+from openai import OpenAI
 
 key = os.getenv("OPENAI_API_KEY")
 print("🔐 OPENAI_API_KEY exists?", bool(key))
 print("🔐 Key starts with:", key[:5] + "***" if key else "(missing)")
 
 client = OpenAI(api_key=key)
-import base64
+
 import faiss
 import numpy as np
 from flask import Flask, request, jsonify
@@ -91,6 +92,9 @@ def query():
 
     data = request.json
     query_text = data.get("query", "")
+    user_email = data.get("email")
+    supervisor_email = data.get("supervisor_email")
+    hr_email = data.get("hr_email")
     full_name = data.get("full_name", "Anonymous")
 
     print(f"📥 Received query from {full_name}: {query_text}")
@@ -103,17 +107,12 @@ def query():
     chunks = [get_chunk_text(metadata[i]["chunk_file"]) for i in I[0]]
     context = "\n\n---\n\n".join(chunks)
 
-    # GPT
+    # GPT response
     answer = ask_gpt(query_text, context)
     print(f"🧠 GPT response: {answer[:80]}...")
+    print(f"✅ Generated answer for {full_name}, now preparing ZIP and emails...")
 
-    return jsonify({
-        "answer": answer,
-        "chunks": len(chunks),
-        "matched_files": [metadata[i]["chunk_file"] for i in I[0]]
-    })
-
-    # Create ZIP output folder
+    # Create ZIP output
     os.makedirs("output", exist_ok=True)
     zip_path = f"output/response_{full_name.replace(' ', '_')}.zip"
 
@@ -143,9 +142,8 @@ def query():
             c.save()
             zipf.write(pdf_path, arcname=f"{role}.pdf")
 
-    # Email ZIP using Postmark
-    postmark = PostmarkClient(server_token=POSTMARK_API_TOKEN)  # ✅ safe name
- 
+    # Send email using Postmark
+    postmark = PostmarkClient(server_token=POSTMARK_API_TOKEN)
     with open(zip_path, "rb") as f:
         zip_data = f.read()
 
@@ -155,7 +153,7 @@ def query():
         "HR": hr_email
     }.items():
         if recipient:
-            client.emails.send(
+            postmark.emails.send(
                 From="michael@justresults.co",
                 To=recipient,
                 Subject=f"{role} Response: {full_name}",
