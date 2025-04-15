@@ -1,5 +1,6 @@
 # Trigger redeploy - test query endpoint
 from flask import Flask, request, jsonify
+from flask_cors import CORS  # ✅ Add CORS support
 import openai
 import faiss
 import numpy as np
@@ -56,14 +57,27 @@ Answer the question below using the provided reference material.
 
 # Flask app
 app = Flask(__name__)
+CORS(app, origins=["https://www.aivs.uk"])
 
-@app.route("/query", methods=["POST"])
+@app.route("/query", methods=["POST", "OPTIONS"])
 def query():
+    if request.method == "OPTIONS":
+        response = jsonify({})
+        response.status_code = 204
+        response.headers.add("Access-Control-Allow-Origin", "https://www.aivs.uk")
+        response.headers.add("Access-Control-Allow-Headers", "Content-Type")
+        response.headers.add("Access-Control-Allow-Methods", "POST, OPTIONS")
+        return response
+
     data = request.json
     query_text = data.get("query", "")
 
     if not query_text:
-        return jsonify({"error": "Missing 'query' field"}), 400
+        response = jsonify({"error": "Missing 'query' field"})
+        response.headers.add("Access-Control-Allow-Origin", "https://www.aivs.uk")
+        response.headers.add("Access-Control-Allow-Headers", "Content-Type")
+        response.headers.add("Access-Control-Allow-Methods", "POST, OPTIONS")
+        return response, 400
 
     query_vector = get_embedding(query_text)
     D, I = faiss_index.search(np.array([query_vector]).astype("float32"), 5)
@@ -72,11 +86,23 @@ def query():
     context = "\n\n---\n\n".join(chunks)
     answer = ask_gpt(query_text, context)
 
-    return jsonify({
+    response = jsonify({
         "answer": answer,
         "chunks": chunks,
         "matched_files": [metadata[i]["chunk_file"] for i in I[0]]
     })
+    response.headers.add("Access-Control-Allow-Origin", "https://www.aivs.uk")
+    response.headers.add("Access-Control-Allow-Headers", "Content-Type")
+    response.headers.add("Access-Control-Allow-Methods", "POST, OPTIONS")
+    return response
+
+@app.after_request
+def apply_cors_headers(response):
+    response.headers.add("Access-Control-Allow-Origin", "https://www.aivs.uk")
+    response.headers.add("Access-Control-Allow-Headers", "Content-Type")
+    response.headers.add("Access-Control-Allow-Methods", "POST, OPTIONS")
+    return response
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
