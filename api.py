@@ -1,9 +1,9 @@
+import os
 import json
 import zipfile
 import openai
-import os
 
-client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))  # ✅ This is correct
+openai.api_key = os.getenv("OPENAI_API_KEY")  # ✅ Works with SDK v0.x
 
 import faiss
 import numpy as np
@@ -87,25 +87,27 @@ def query():
 
     data = request.json
     query_text = data.get("query", "")
-    user_email = data.get("email")
-    supervisor_email = data.get("supervisor_email")
-    hr_email = data.get("hr_email")
-    full_name = data.get("full_name", "Unknown")
-
-    if not query_text or not user_email:
-        return jsonify({"error": "Missing query or user email"}), 400
+    full_name = data.get("full_name", "Anonymous")
 
     print(f"📥 Received query from {full_name}: {query_text}")
 
-    # Run FAISS
+    # Embed query
     query_vector = get_embedding(query_text)
+
+    # FAISS search
     D, I = faiss_index.search(np.array([query_vector]).astype("float32"), 5)
     chunks = [get_chunk_text(metadata[i]["chunk_file"]) for i in I[0]]
     context = "\n\n---\n\n".join(chunks)
 
-    # Ask GPT
+    # GPT
     answer = ask_gpt(query_text, context)
-    print(f"🧠 GPT: {answer[:80]}...")
+    print(f"🧠 GPT response: {answer[:80]}...")
+
+    return jsonify({
+        "answer": answer,
+        "chunks": len(chunks),
+        "matched_files": [metadata[i]["chunk_file"] for i in I[0]]
+    })
 
     # Create ZIP output folder
     os.makedirs("output", exist_ok=True)
