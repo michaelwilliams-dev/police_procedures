@@ -1,36 +1,24 @@
 import os
 import json
-import zipfile
 import base64
 from openai import OpenAI
-
-key = os.getenv("OPENAI_API_KEY")
-print("🔐 OPENAI_API_KEY exists?", bool(key))
-print("🔐 Key starts with:", key[:5] + "***" if key else "(missing)")
-
-client = OpenAI(api_key=key)
-
-import faiss
-import numpy as np
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from docx import Document
-from reportlab.pdfgen import canvas
 from postmarker.core import PostmarkClient
 
-# Flask app setup
+# === Configuration ===
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+POSTMARK_API_TOKEN = os.getenv("POSTMARK_API_TOKEN")
+
+# === OpenAI client ===
+print("🔐 OPENAI_API_KEY exists?", bool(OPENAI_API_KEY))
+client = OpenAI(api_key=OPENAI_API_KEY)
+
+# === Flask setup ===
 app = Flask(__name__)
 CORS(app, origins=["https://www.aivs.uk"])
 
-# Load FAISS index + metadata
-faiss_index = faiss.read_index("faiss_index/police_chunks.index")
-with open("faiss_index/police_metadata.json", "r", encoding="utf-8") as f:
-    metadata = json.load(f)
-
-# Load Postmark API key
-POSTMARK_API_TOKEN = os.getenv("POSTMARK_API_TOKEN")
-
-# CORS headers for all responses
 @app.after_request
 def apply_cors_headers(response):
     response.headers.add("Access-Control-Allow-Origin", "https://www.aivs.uk")
@@ -38,44 +26,21 @@ def apply_cors_headers(response):
     response.headers.add("Access-Control-Allow-Methods", "POST, OPTIONS")
     return response
 
-# Ping route for testing
 @app.route("/ping", methods=["POST", "OPTIONS"])
 def ping():
     if request.method == "OPTIONS":
         return '', 204
-    print("✅ POST /ping received!")
     return jsonify({"message": "pong"})
 
-# Utility: Load chunk file
-def get_chunk_text(fname):
-    path = os.path.join("data", fname)
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            return f.read().strip()
-    except:
-        return "[Chunk missing]"
+# === GPT logic ===
+def ask_gpt(query):
+    prompt = f"""You are a police procedural assistant using UK law and guidance.
 
-# Utility: Create OpenAI embedding
-def get_embedding(text):
-    response = client.embeddings.create(
-        input=[text.replace("\n", " ")],
-        model="text-embedding-3-small"
-    )
-    return response.data[0].embedding
+Answer the question using proper JSON and Word formatting.
 
-# Utility: Ask GPT
-def ask_gpt(query, context):
-    prompt = f"""You are a police procedural assistant using UK law and operational guidance.
+QUESTION: {query}
 
-Answer the question below using the provided reference material.
-
-### QUESTION:
-{query}
-
-### CONTEXT:
-{context}
-
-### ANSWER:"""
+ANSWER:"""
 
     completion = client.chat.completions.create(
         model="gpt-4",
@@ -84,7 +49,6 @@ Answer the question below using the provided reference material.
     )
     return completion.choices[0].message.content.strip()
 
-# Main /query endpoint
 @app.route("/query", methods=["POST", "OPTIONS"])
 def query():
     if request.method == "OPTIONS":
@@ -92,85 +56,69 @@ def query():
 
     data = request.json
     query_text = data.get("query", "")
+    full_name = data.get("full_name", "Anonymous")
     user_email = data.get("email")
     supervisor_email = data.get("supervisor_email")
     hr_email = data.get("hr_email")
-    full_name = data.get("full_name", "Anonymous")
 
     print(f"📥 Received query from {full_name}: {query_text}")
 
-    # Embed query
-    query_vector = get_embedding(query_text)
+    answer = ask_gpt(query_text)
+    print(f"🧠 GPT answer: {answer[:80]}...")
 
-    # FAISS search
-    D, I = faiss_index.search(np.array([query_vector]).astype("float32"), 5)
-    chunks = [get_chunk_text(metadata[i]["chunk_file"]) for i in I[0]]
-    context = "\n\n---\n\n".join(chunks)
-
-    # GPT response
-    answer = ask_gpt(query_text, context)
-    print(f"🧠 GPT response: {answer[:80]}...")
-    print(f"✅ Generated answer for {full_name}, now preparing ZIP and emails...")
-
-    # Create ZIP output
     os.makedirs("output", exist_ok=True)
-    zip_path = f"output/response_{full_name.replace(' ', '_')}.zip"
 
-    with zipfile.ZipFile(zip_path, "w") as zipf:
-        for role, recipient in {
-            "User": user_email,
-            "Supervisor": supervisor_email,
-            "HR": hr_email
-        }.items():
-            if not recipient:
-                continue
+    # === Generate Word doc ===
+    doc_path = f"output/{full_name.replace(' ', '_')}.docx"
+    doc = Document()
+    doc.add_heading(f"Response for {full_name}", level=1)
+    doc.add_paragraph(answer)
+    doc.save(doc_path)
 
-            # Create Word doc
-            doc_path = f"output/{role}.docx"
-            doc = Document()
-            doc.add_heading(f"{role} Response", 0)
-            doc.add_paragraph(answer)
-            doc.save(doc_path)
-            zipf.write(doc_path, arcname=f"{role}.docx")
+    # === Generate JSON file ===
+    json_path = f"output/{full_name.replace(' ', '_')}.json"
+    with open(json_path, "w", encoding="utf-8") as f:
+        json.dump({"full_name": full_name, "query": query_text, "answer": answer}, f, indent=2)
 
-            # Create PDF
-            pdf_path = f"output/{role}.pdf"
-            c = canvas.Canvas(pdf_path)
-            c.drawString(100, 800, f"{role} Response:")
-            for i, line in enumerate(answer.splitlines()):
-                c.drawString(100, 780 - (i * 14), line[:100])
-            c.save()
-            zipf.write(pdf_path, arcname=f"{role}.pdf")
-
-    # Send email using Postmark
+    # === Send emails ===
     postmark = PostmarkClient(server_token=POSTMARK_API_TOKEN)
-    with open(zip_path, "rb") as f:
-        zip_data = f.read()
 
-    for role, recipient in {
+    recipients = {
         "User": user_email,
         "Supervisor": supervisor_email,
         "HR": hr_email
-    }.items():
-        if recipient:
-            postmark.emails.send(
-                From="michael@justresults.co",
-                To=recipient,
-                Subject=f"{role} Response: {full_name}",
-                TextBody=f"Attached is the {role} response to the query.",
-                Attachments=[
-                    {
-                        "Name": os.path.basename(zip_path),
-                        "Content": base64.b64encode(zip_data).decode("utf-8"),
-                        "ContentType": "application/zip"
-                    }
-                ]
-            )
-            print(f"📤 Sent ZIP to {role} at {recipient}")
+    }
 
-    return jsonify({"message": "✅ Emails sent!"})
+    for role, recipient in recipients.items():
+        if not recipient:
+            continue
 
-# Run app locally if needed
+        attachments = []
+
+        for file_path, name, content_type in [
+            (doc_path, f"{role}_response.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
+            (json_path, f"{role}_response.json", "application/json")
+        ]:
+            with open(file_path, "rb") as f:
+                content = base64.b64encode(f.read()).decode("utf-8")
+                attachments.append({
+                    "Name": name,
+                    "Content": content,
+                    "ContentType": content_type
+                })
+
+        postmark.emails.send(
+            From="michael@justresults.co",
+            To=recipient,
+            Subject=f"{role} Response: {full_name}",
+            TextBody=f"Attached are your Word and JSON response files.",
+            Attachments=attachments
+        )
+
+        print(f"📤 Sent Word + JSON to {role} at {recipient}")
+
+    return jsonify({"message": "✅ Emails sent with Word and JSON files."})
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
