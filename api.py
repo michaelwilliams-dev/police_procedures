@@ -1,11 +1,13 @@
 import os
 import json
 import zipfile
-from openai import OpenAI
-print("🔐 OPENAI_API_KEY exists?", "OPENAI_API_KEY" in os.environ)
-print("🔐 Key starts with:", os.getenv("OPENAI_API_KEY")[:5], "***")
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+from openai import OpenAI  # ✅ Only once
 
+key = os.getenv("OPENAI_API_KEY")
+print("🔐 OPENAI_API_KEY exists?", bool(key))
+print("🔐 Key starts with:", key[:5] + "***" if key else "(missing)")
+
+client = OpenAI(api_key=key)
 
 import faiss
 import numpy as np
