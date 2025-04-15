@@ -55,12 +55,33 @@ Answer the question below using the provided reference material.
     return completion.choices[0].message.content.strip()
 
 # Flask app
-app = Flask(__name__)
 
-@app.route("/query", methods=["POST"])
+from flask import Flask, request, jsonify
+app = Flask(__name__)
+@app.after_request
+def apply_cors_headers(response):
+    response.headers.add("Access-Control-Allow-Origin", "https://www.aivs.uk")
+    response.headers.add("Access-Control-Allow-Headers", "Content-Type")
+    response.headers.add("Access-Control-Allow-Methods", "POST, OPTIONS")
+    return response
+
+@app.route("/ping", methods=["POST", "OPTIONS"])
+def ping():
+    if request.method == "OPTIONS":
+        return '', 204
+
+    print("✅ POST /ping received!")
+    return jsonify({"message": "pong"})
+@app.route("/query", methods=["POST", "OPTIONS"])
 def query():
+    if request.method == "OPTIONS":
+        return '', 204
+
     data = request.json
     query_text = data.get("query", "")
+    print(f"📥 Received /query with: {query_text}")
+
+    return jsonify({"message": f"Received your query: {query_text}"})
 
     if not query_text:
         return jsonify({"error": "Missing 'query' field"}), 400
