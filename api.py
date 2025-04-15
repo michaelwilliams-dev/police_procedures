@@ -8,7 +8,7 @@ print("🔐 OPENAI_API_KEY exists?", bool(key))
 print("🔐 Key starts with:", key[:5] + "***" if key else "(missing)")
 
 client = OpenAI(api_key=key)
-
+import base64
 import faiss
 import numpy as np
 from flask import Flask, request, jsonify
@@ -156,14 +156,14 @@ def query():
     }.items():
         if recipient:
             client.emails.send(
-                From="noreply@aivs.uk",
+                From="michael@justresults.co",
                 To=recipient,
                 Subject=f"{role} Response: {full_name}",
                 TextBody=f"Attached is the {role} response to the query.",
                 Attachments=[
                     {
                         "Name": os.path.basename(zip_path),
-                        "Content": zip_data.encode("base64"),
+                        "Content": base64.b64encode(zip_data).decode("utf-8"),
                         "ContentType": "application/zip"
                     }
                 ]
