@@ -2,6 +2,8 @@ import os
 import json
 import zipfile
 from openai import OpenAI
+print("🔐 OPENAI_API_KEY exists?", "OPENAI_API_KEY" in os.environ)
+print("🔐 Key starts with:", os.getenv("OPENAI_API_KEY")[:5], "***")
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
@@ -140,7 +142,8 @@ def query():
             zipf.write(pdf_path, arcname=f"{role}.pdf")
 
     # Email ZIP using Postmark
-    client = PostmarkClient(server_token=POSTMARK_API_TOKEN)
+    postmark = PostmarkClient(server_token=POSTMARK_API_TOKEN)  # ✅ safe name
+ 
     with open(zip_path, "rb") as f:
         zip_data = f.read()
 
