@@ -1,12 +1,15 @@
-import os
+""import os
 import json
 import base64
+import numpy as np
+import faiss
 from openai import OpenAI
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from docx import Document
 from postmarker.core import PostmarkClient
 from datetime import datetime
+
 # === Configuration ===
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 POSTMARK_API_TOKEN = os.getenv("POSTMARK_API_TOKEN")
@@ -14,6 +17,19 @@ POSTMARK_API_TOKEN = os.getenv("POSTMARK_API_TOKEN")
 # === OpenAI client ===
 print("🔐 OPENAI_API_KEY exists?", bool(OPENAI_API_KEY))
 client = OpenAI(api_key=OPENAI_API_KEY)
+
+# === FAISS index and metadata ===
+faiss_index = faiss.read_index("faiss_index/police_chunks.index")
+with open("faiss_index/police_metadata.json", "r", encoding="utf-8") as f:
+    metadata = json.load(f)
+
+def get_chunk_text(fname):
+    path = os.path.join("data", fname)
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return f.read().strip()
+    except:
+        return "[Missing chunk text]"
 
 # === Flask setup ===
 app = Flask(__name__)
@@ -62,6 +78,7 @@ You are a police procedural assistant using UK law and operational guidance.
 def query():
     if request.method == "OPTIONS":
         return '', 204
+
     # Timestamp the response
     timestamp = datetime.utcnow().strftime("%d %B %Y, %H:%M GMT")
     data = request.json
@@ -73,11 +90,22 @@ def query():
 
     print(f"📥 Received query from {full_name}: {query_text}")
 
-    # Placeholder for context (normally from FAISS)
-    simulated_context = "- Policy 11.2 states CCTV must be reviewed within 24 hours.\n- Missing footage must be reported to senior staff and IT."
+    # === Real FAISS lookup ===
+    query_vector = client.embeddings.create(
+        input=[query_text.replace("\n", " ")],
+        model="text-embedding-3-small"
+    ).data[0].embedding
+
+    D, I = faiss_index.search(np.array([query_vector]).astype("float32"), 5)
+    chunks = [get_chunk_text(metadata[i]["chunk_file"]) for i in I[0]]
+    context = "\n\n---\n\n".join(chunks)
+
+    print("🔍 FAISS matched files:")
+    for i in I[0]:
+        print(f" - {metadata[i]['chunk_file']}")
 
     # Run GPT
-    merged_response = ask_gpt_with_context(query_text, simulated_context)
+    merged_response = ask_gpt_with_context(query_text, context)
     print(f"🧠 GPT response: {merged_response[:80]}...")
 
     os.makedirs("output", exist_ok=True)
@@ -87,7 +115,7 @@ def query():
     doc = Document()
     doc.add_heading(f"Response for {full_name}", level=1)
     doc.add_paragraph(f"🕒 Generated: {timestamp}")
-    doc.add_paragraph("")  # Spacer
+    doc.add_paragraph("")
     doc.add_paragraph(merged_response)
     doc.save(doc_path)
 
@@ -96,8 +124,9 @@ def query():
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump({
             "query": query_text,
-            "context": simulated_context,
-            "response": merged_response
+            "context": context,
+            "response": merged_response,
+            "timestamp": timestamp
         }, f, indent=2)
 
     # === Send emails ===
