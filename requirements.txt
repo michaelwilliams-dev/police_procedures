@@ -1,10 +1,2 @@
-openai>=1.0.0
 flask
-flask_cors
-openai
-faiss-cpu
-numpy
 gunicorn
-python-docx
-reportlab
-postmarker
