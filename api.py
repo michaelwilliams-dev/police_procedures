@@ -86,6 +86,8 @@ def query():
     doc_path = f"output/{full_name.replace(' ', '_')}.docx"
     doc = Document()
     doc.add_heading(f"Response for {full_name}", level=1)
+    doc.add_paragraph(f"🕒 Generated: {timestamp}")
+    doc.add_paragraph("")  # Spacer
     doc.add_paragraph(merged_response)
     doc.save(doc_path)
 
