@@ -63,6 +63,7 @@ def query():
     data = request.json
     query_text = data.get("query", "")
     full_name = data.get("full_name", "Anonymous")
+    context = "No supporting evidence provided."  # Temp fallback context
     user_email = data.get("email")
     supervisor_email = data.get("supervisor_email")
     hr_email = data.get("hr_email")
