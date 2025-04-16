@@ -19,9 +19,15 @@ print("🔐 OPENAI_API_KEY exists?", bool(OPENAI_API_KEY))
 client = OpenAI(api_key=OPENAI_API_KEY)
 
 # === FAISS index and metadata ===
-faiss_index = faiss.read_index("faiss_index/police_chunks.index")
-with open("faiss_index/police_metadata.json", "r", encoding="utf-8") as f:
-    metadata = json.load(f)
+try:
+    faiss_index = faiss.read_index("faiss_index/police_chunks.index")
+    with open("faiss_index/police_metadata.json", "r", encoding="utf-8") as f:
+        metadata = json.load(f)
+    print("✅ FAISS index and metadata loaded.")
+except Exception as e:
+    faiss_index = None
+    metadata = []
+    print("⚠️ Failed to load FAISS index:", e)
 
 def get_chunk_text(fname):
     path = os.path.join("data", fname)
@@ -75,6 +81,9 @@ You are a police procedural assistant using UK law and operational guidance.
 def query():
     if request.method == "OPTIONS":
         return '', 204
+
+    if not faiss_index:
+        return jsonify({"error": "FAISS index not available."}), 500
 
     # Timestamp the response
     timestamp = datetime.utcnow().strftime("%d %B %Y, %H:%M GMT")
@@ -168,4 +177,3 @@ def query():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
-
