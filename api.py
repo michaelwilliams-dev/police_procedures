@@ -32,15 +32,24 @@ def ping():
         return '', 204
     return jsonify({"message": "pong"})
 
-# === GPT logic ===
-def ask_gpt(query):
-    prompt = f"""You are a police procedural assistant using UK law and guidance.
+# === GPT logic with merged context and analysis ===
+def ask_gpt_with_context(query, context):
+    prompt = f"""
+You are a police procedural assistant using UK law and operational guidance.
 
-Answer the question using proper JSON and Word formatting.
+### CONTEXT:
+{context}
 
-QUESTION: {query}
+### QUESTION:
+{query}
 
-ANSWER:"""
+### INSTRUCTIONS:
+- First, display the CONTEXT as 'Supporting Evidence'
+- Then, write a clear, well-structured ANALYSIS
+- Use bullet points or paragraphs where appropriate
+
+### RESPONSE:
+"""
 
     completion = client.chat.completions.create(
         model="gpt-4",
@@ -63,8 +72,12 @@ def query():
 
     print(f"📥 Received query from {full_name}: {query_text}")
 
-    answer = ask_gpt(query_text)
-    print(f"🧠 GPT answer: {answer[:80]}...")
+    # Placeholder for context (normally from FAISS)
+    simulated_context = "- Policy 11.2 states CCTV must be reviewed within 24 hours.\n- Missing footage must be reported to senior staff and IT."
+
+    # Run GPT
+    merged_response = ask_gpt_with_context(query_text, simulated_context)
+    print(f"🧠 GPT response: {merged_response[:80]}...")
 
     os.makedirs("output", exist_ok=True)
 
@@ -72,13 +85,17 @@ def query():
     doc_path = f"output/{full_name.replace(' ', '_')}.docx"
     doc = Document()
     doc.add_heading(f"Response for {full_name}", level=1)
-    doc.add_paragraph(answer)
+    doc.add_paragraph(merged_response)
     doc.save(doc_path)
 
     # === Generate JSON file ===
     json_path = f"output/{full_name.replace(' ', '_')}.json"
     with open(json_path, "w", encoding="utf-8") as f:
-        json.dump({"full_name": full_name, "query": query_text, "answer": answer}, f, indent=2)
+        json.dump({
+            "query": query_text,
+            "context": simulated_context,
+            "response": merged_response
+        }, f, indent=2)
 
     # === Send emails ===
     postmark = PostmarkClient(server_token=POSTMARK_API_TOKEN)
@@ -111,13 +128,13 @@ def query():
             From="michael@justresults.co",
             To=recipient,
             Subject=f"{role} Response: {full_name}",
-            TextBody=f"Attached are your Word and JSON response files.",
+            TextBody=f"Attached are your merged Word and JSON response files.",
             Attachments=attachments
         )
 
-        print(f"📤 Sent Word + JSON to {role} at {recipient}")
+        print(f"📤 Sent merged response to {role} at {recipient}")
 
-    return jsonify({"message": "✅ Emails sent with Word and JSON files."})
+    return jsonify({"message": "✅ Merged emails sent with Word and JSON files."})
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
