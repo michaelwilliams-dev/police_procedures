@@ -1,3 +1,4 @@
+print("🟢 Hello from top of api.py — app starting!")
 print("✅ API starting...")
 import os
 import json
