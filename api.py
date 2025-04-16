@@ -53,18 +53,15 @@ def ask_gpt_with_context(query, context):
     prompt = f"""
 You are a police procedural assistant using UK law and operational guidance.
 
-### CONTEXT:
+### SUPPORTING EVIDENCE:
 {context}
 
 ### QUESTION:
 {query}
 
-### INSTRUCTIONS:
-- First, display the CONTEXT as 'Supporting Evidence'
-- Then, write a clear, well-structured ANALYSIS
-- Use bullet points or paragraphs where appropriate
-
-### RESPONSE:
+### ANALYSIS:
+- Provide a clear summary of what the evidence implies.
+- Recommend next steps or actions.
 """
 
     completion = client.chat.completions.create(
@@ -104,22 +101,10 @@ def query():
     for i in I[0]:
         print(f" - {metadata[i]['chunk_file']}")
 
-    # Run GPT
-    query_vector = client.embeddings.create(
-        input=[query_text.replace("\n", " ")],
-        model="text-embedding-3-small"
-    ).data[0].embedding
-
-    D, I = faiss_index.search(np.array([query_vector]).astype("float32"), 5)
-    chunks = [get_chunk_text(metadata[i]["chunk_file"]) for i in I[0]]
-    context = "\n\n---\n\n".join(chunks)
-
-    print("🔍 FAISS matched files:")
-    for i in I[0]:
-        print(f" - {metadata[i]['chunk_file']}")
-
+    # Run GPT with real context
     merged_response = ask_gpt_with_context(query_text, context)
     print(f"🧠 GPT response: {merged_response[:80]}...")
+
     os.makedirs("output", exist_ok=True)
 
     # === Generate Word doc ===
