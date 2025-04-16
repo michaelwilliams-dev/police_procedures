@@ -1,6 +1,8 @@
-raise Exception("💥 Test crash at top of api.py")
-print("🟢 Hello from top of api.py — app starting!")
-print("✅ API starting...")
+""print("🟢 Hello from top of api.py")
+
+# Uncomment to test Render execution:
+# raise Exception("💥 Test crash at top of api.py")
+
 import os
 import json
 import base64
@@ -16,12 +18,10 @@ from datetime import datetime
 # === Configuration ===
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 POSTMARK_API_TOKEN = os.getenv("POSTMARK_API_TOKEN")
-
-# === OpenAI client ===
 print("🔐 OPENAI_API_KEY exists?", bool(OPENAI_API_KEY))
 client = OpenAI(api_key=OPENAI_API_KEY)
 
-# === FAISS index and metadata ===
+# === Try to load FAISS index ===
 try:
     faiss_index = faiss.read_index("faiss_index/police_chunks.index")
     with open("faiss_index/police_metadata.json", "r", encoding="utf-8") as f:
@@ -30,15 +30,8 @@ try:
 except Exception as e:
     faiss_index = None
     metadata = []
-    print("⚠️ Failed to load FAISS index:", e)
+    print("⚠️ Failed to load FAISS index:", str(e))
 
-def get_chunk_text(fname):
-    path = os.path.join("data", fname)
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            return f.read().strip()
-    except:
-        return "[Missing chunk text]"
 
 # === Flask setup ===
 app = Flask(__name__)
@@ -55,9 +48,10 @@ def apply_cors_headers(response):
 def ping():
     if request.method == "OPTIONS":
         return '', 204
+    print("✅ Ping route hit")
     return jsonify({"message": "pong"})
 
-# === GPT logic with merged context and analysis ===
+# === GPT with context ===
 def ask_gpt_with_context(query, context):
     prompt = f"""
 You are a police procedural assistant using UK law and operational guidance.
@@ -72,7 +66,6 @@ You are a police procedural assistant using UK law and operational guidance.
 - Provide a clear summary of what the evidence implies.
 - Recommend next steps or actions.
 """
-
     completion = client.chat.completions.create(
         model="gpt-4",
         messages=[{"role": "user", "content": prompt}],
@@ -80,15 +73,23 @@ You are a police procedural assistant using UK law and operational guidance.
     )
     return completion.choices[0].message.content.strip()
 
+def get_chunk_text(fname):
+    path = os.path.join("data", fname)
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return f.read().strip()
+    except:
+        return "[Missing chunk text]"
+
 @app.route("/query", methods=["POST", "OPTIONS"])
 def query():
     if request.method == "OPTIONS":
         return '', 204
 
     if not faiss_index:
-        return jsonify({"error": "FAISS index not available."}), 500
+        return jsonify({"error": "FAISS index not available"}), 500
 
-    # Timestamp the response
+    # Input and timestamp
     timestamp = datetime.utcnow().strftime("%d %B %Y, %H:%M GMT")
     data = request.json
     query_text = data.get("query", "")
@@ -99,7 +100,7 @@ def query():
 
     print(f"📥 Received query from {full_name}: {query_text}")
 
-    # === Real FAISS lookup ===
+    # Embed + FAISS search
     query_vector = client.embeddings.create(
         input=[query_text.replace("\n", " ")],
         model="text-embedding-3-small"
