@@ -1,4 +1,5 @@
-""import os
+print("✅ API starting...")
+import os
 import json
 import base64
 import numpy as np
