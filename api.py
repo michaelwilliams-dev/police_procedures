@@ -6,7 +6,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from docx import Document
 from postmarker.core import PostmarkClient
-
+from datetime import datetime
 # === Configuration ===
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 POSTMARK_API_TOKEN = os.getenv("POSTMARK_API_TOKEN")
@@ -62,7 +62,8 @@ You are a police procedural assistant using UK law and operational guidance.
 def query():
     if request.method == "OPTIONS":
         return '', 204
-
+    # Timestamp the response
+    timestamp = datetime.utcnow().strftime("%d %B %Y, %H:%M GMT")
     data = request.json
     query_text = data.get("query", "")
     full_name = data.get("full_name", "Anonymous")
