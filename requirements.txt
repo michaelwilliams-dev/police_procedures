@@ -1,2 +1,9 @@
+openai>=1.0.0
+faiss-cpu
 flask
+flask_cors
 gunicorn
+python-docx
+reportlab
+postmarker
+numpy
