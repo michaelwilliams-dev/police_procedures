@@ -33,15 +33,21 @@ def ping():
     return jsonify({"message": "pong"})
 
 # === GPT logic ===
-def ask_gpt(query):
-    prompt = f"""You are a police procedural assistant using UK law and guidance.
+def ask_gpt_with_context(query, context):
+    prompt = f"""
+You are a police procedural constable using UK law and internal operational guidance.
 
-Answer the question using proper JSON and Word formatting.
+**Supporting Evidence:**
+{context}
 
-QUESTION: {query}
+**Question:**
+{query}
 
-ANSWER:"""
-
+**Analysis:**
+- Explain what the evidence implies.
+- List 2–4 clear actions the staff should take.
+- Flag any compliance or reporting issues.
+"""
     completion = client.chat.completions.create(
         model="gpt-4",
         messages=[{"role": "user", "content": prompt}],
@@ -72,7 +78,7 @@ def query():
     doc_path = f"output/{full_name.replace(' ', '_')}.docx"
     doc = Document()
     doc.add_heading(f"Response for {full_name}", level=1)
-    doc.add_paragraph(answer)
+    doc.add_paragraph("📄 AUTOMATED CASE REVIEW\n\n" + answer)
     doc.save(doc_path)
 
     # === Generate JSON file ===
