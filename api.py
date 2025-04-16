@@ -1,3 +1,4 @@
+raise Exception("💥 Test crash at top of api.py")
 print("🟢 Hello from top of api.py — app starting!")
 print("✅ API starting...")
 import os
