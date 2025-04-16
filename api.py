@@ -105,9 +105,21 @@ def query():
         print(f" - {metadata[i]['chunk_file']}")
 
     # Run GPT
+    query_vector = client.embeddings.create(
+        input=[query_text.replace("\n", " ")],
+        model="text-embedding-3-small"
+    ).data[0].embedding
+
+    D, I = faiss_index.search(np.array([query_vector]).astype("float32"), 5)
+    chunks = [get_chunk_text(metadata[i]["chunk_file"]) for i in I[0]]
+    context = "\n\n---\n\n".join(chunks)
+
+    print("🔍 FAISS matched files:")
+    for i in I[0]:
+        print(f" - {metadata[i]['chunk_file']}")
+
     merged_response = ask_gpt_with_context(query_text, context)
     print(f"🧠 GPT response: {merged_response[:80]}...")
-
     os.makedirs("output", exist_ok=True)
 
     # === Generate Word doc ===
