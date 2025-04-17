@@ -134,52 +134,65 @@ add_markdown_bold(doc.add_paragraph(), answer)
     #with open(json_path, "w", encoding="utf-8") as f:
     #    json.dump({"full_name": full_name, "query": query_text, "answer": answer}, f, indent=2)
 
-    # === Send emails ===
-    postmark = PostmarkClient(server_token=POSTMARK_API_TOKEN)
+# === Send emails ===
+postmark = PostmarkClient(server_token=POSTMARK_API_TOKEN)
 
-    recipients = {
-        "User": user_email,
-        "Supervisor": supervisor_email,
-        "HR": hr_email
-    }
+recipients = {
+    "User": user_email,
+    "Supervisor": supervisor_email,
+    "HR": hr_email
+}
 
-    for role, recipient in recipients.items():
-        if not recipient:
-            continue
+for role, recipient in recipients.items():
+    if not recipient:
+        continue
 
-        # === Change 1201 ===
-        attachments = []
+    # === Generate Word doc ===
+    doc_path = f"output/{role}_{full_name.replace(' ', '_')}.docx"
+    doc = Document()
+    doc.add_heading(f"Response for {full_name}", level=1)
 
-        for file_path, name, content_type in [
-            (doc_path, f"{role}_response.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-        ]:
-            with open(file_path, "rb") as f:
-                content = base64.b64encode(f.read()).decode("utf-8")
-                attachments.append({
-                    "Name": name,
-                    "Content": content,
-                    "ContentType": content_type
-                })
+    if role == "Supervisor":
+        doc.add_paragraph(f"Copy for {supervisor_name}")
+    elif role == "HR":
+        doc.add_paragraph("Copy for HR / Filing")
 
-        # === Change 1210 ===
-        final_text = f"Attached are your Word document.\n\n📅 Generated: {timestamp}"
-        print("📧 Final TextBody:\n" + final_text)
+    doc.add_paragraph(f"📅 Generated: {timestamp}")
+    section_title = doc.add_paragraph()
+    section_title.add_run("📄 AI AUTOMATED CASE REVIEW").bold = True
+    add_markdown_bold(doc.add_paragraph(), answer)
 
-        # === Change 1224 ===   
-        postmark.emails.send(
-            From="michael@justresults.co",
-            To=recipient,
-            Subject=f"{role} Response: {full_name}",
-            HtmlBody=f"""
-                <p>Attached is your Word document.</p>
-                <p><strong>📅 Generated:</strong> {timestamp}</p>
-            """,
-            Attachments=attachments
-        )
+    doc.save(doc_path)
 
-        print(f"📤 Sent Word + JSON to {role} at {recipient}")
+    # === Attachments ===
+    attachments = []
+    for file_path, name, content_type in [
+        (doc_path, f"{role}_response.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+    ]:
+        with open(file_path, "rb") as f:
+            content = base64.b64encode(f.read()).decode("utf-8")
+            attachments.append({
+                "Name": name,
+                "Content": content,
+                "ContentType": content_type
+            })
 
-    return jsonify({"message": "✅ Emails sent with Word and JSON files."})
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    # === Send email ===
+    final_text = f"Attached are your Word document.\n\n📅 Generated: {timestamp}"
+    print("📧 Final TextBody:\n" + final_text)
+
+    postmark.emails.send(
+        From="michael@justresults.co",
+        To=recipient,
+        Subject=f"{role} Response: {full_name}",
+        HtmlBody=f"""
+            <p>Attached is your Word document.</p>
+            <p><strong>📅 Generated:</strong> {timestamp}</p>
+        """,
+        Attachments=attachments
+    )
+
+    print(f"📤 Sent Word to {role} at {recipient}")
+
+# ✅ Outside loop
+return jsonify({"message": "✅ Emails sent with personalized Word documents."})
