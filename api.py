@@ -5,13 +5,30 @@ import base64
 # === Change 1028 ===
 import datetime
 
-__version__ = "v1.0.3 – 17 April 2025 – GPT structured + placeholder context"
+__version__ = "v1.0.5 – 17 April 2025 – GPT structured + placeholder context"
 print(f"🚀 API Version: {__version__}")
 from openai import OpenAI
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from docx import Document
 from postmarker.core import PostmarkClient
+
+# === Change 1339 ===
+import re
+
+# === Helper: Convert **bold** to real bold in Word ===
+def add_markdown_bold(paragraph, text):
+    """
+    Converts **bold** to actual bold text in a Word paragraph.
+    """
+    parts = re.split(r'(\*\*[^*]+\*\*)', text)
+    for part in parts:
+        if part.startswith("**") and part.endswith("**"):
+            run = paragraph.add_run(part[2:-2])
+            run.bold = True
+        else:
+            paragraph.add_run(part)
+
 
 # === Configuration ===
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -91,7 +108,9 @@ def query():
     doc_path = f"output/{full_name.replace(' ', '_')}.docx"
     doc = Document()
     doc.add_heading(f"Response for {full_name}", level=1)
-    doc.add_paragraph("📄 AUTOMATED CASE REVIEW\n\n" + answer)
+    # ===doc.add_paragraph("📄 AUTOMATED CASE REVIEW\n\n" + answer)
+    doc.add_paragraph("📄 AUTOMATED CASE REVIEW")
+    add_markdown_bold(doc.add_paragraph(), answer)
     # UPDATE 1258 Add timestamp clearly under heading
     doc.add_paragraph(f"📅 Generated: {timestamp}")
     doc.save(doc_path)
