@@ -103,7 +103,7 @@ def query():
     # === Send emails ===
     postmark = PostmarkClient(server_token=POSTMARK_API_TOKEN)
 
-        recipients = {
+    recipients = {
         "User": user_email,
         "Supervisor": supervisor_email,
         "HR": hr_email
