@@ -126,8 +126,8 @@ def query():
             From="michael@justresults.co",
             To=recipient,
             Subject=f"{role} Response: {full_name}",
- # === Change 0912 === TextBody=f"Attached are your Word and JSON response files.",
-  TextBody=f"Attached are your Word and JSON response files.\n\n📅 Generated: {timestamp}"
+ # === Change 1006 === TextBody=f"Attached are your Word and JSON response files.",
+  TextBody=f"Attached are your Word and JSON response files.\n\n📅 Generated: {timestamp}",
             Attachments=attachments
         )
 
