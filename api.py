@@ -5,7 +5,7 @@ import base64
 # === Change 1028 ===
 import datetime
 
-__version__ = "v1.0.2 – 17 April 2025 – GPT structured + placeholder context"
+__version__ = "v1.0.3 – 17 April 2025 – GPT structured + placeholder context"
 print(f"🚀 API Version: {__version__}")
 from openai import OpenAI
 from flask import Flask, request, jsonify
@@ -130,18 +130,21 @@ def query():
 # === Change 1210 ===
         final_text = f"Attached are your Word document.\n\n📅 Generated: {timestamp}"
         print("📧 Final TextBody:\n" + final_text)
-        
-        postmark.emails.send(
-            From="michael@justresults.co",
-            To=recipient,
-            Subject=f"{role} Response: {full_name}",
-            TextBody=final_text,
-            Attachments=attachments
-        )
+# === Change 1224 ===   
+    postmark.emails.send(
+        From="michael@justresults.co",
+        To=recipient,
+        Subject=f"{role} Response: {full_name}",
+        HtmlBody=f"""
+            <p>Attached is your Word document.</p>
+            <p><strong>📅 Generated:</strong> {timestamp}</p>
+        """,
+        Attachments=attachments
+    )
 
-        print(f"📤 Sent Word + JSON to {role} at {recipient}")
+    print(f"📤 Sent Word + JSON to {role} at {recipient}")
 
-    return jsonify({"message": "✅ Emails sent with Word and JSON files."})
+return jsonify({"message": "✅ Emails sent with Word and JSON files."})
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
