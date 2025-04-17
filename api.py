@@ -127,12 +127,15 @@ def query():
                     "Content": content,
                     "ContentType": content_type
                 })
-
+# === Change 1210 ===
+        final_text = f"Attached are your Word document.\n\n📅 Generated: {timestamp}"
+        print("📧 Final TextBody:\n" + final_text)
+        
         postmark.emails.send(
             From="michael@justresults.co",
             To=recipient,
             Subject=f"{role} Response: {full_name}",
-            TextBody=f"Attached are your Word and JSON response files.\n\n📅 Generated: {timestamp}",
+            TextBody=final_text,
             Attachments=attachments
         )
 
