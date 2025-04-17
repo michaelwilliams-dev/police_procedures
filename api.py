@@ -35,7 +35,7 @@ def ping():
 # === GPT logic ===
 def ask_gpt_with_context(query, context):
     prompt = f"""
-You are a police procedural constable using UK law and internal operational guidance.
+You are a police procedural administrator using UK law and internal operational guidance.
 
 **Supporting Evidence:**
 {context}
@@ -63,7 +63,7 @@ def query():
     data = request.json
     query_text = data.get("query", "")
     full_name = data.get("full_name", "Anonymous")
-    context = "No supporting evidence provided."  # Temp fallback context
+    
     user_email = data.get("email")
     supervisor_email = data.get("supervisor_email")
     hr_email = data.get("hr_email")
