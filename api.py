@@ -5,7 +5,7 @@ import base64
 # === Change 1028 ===
 import datetime
 
-__version__ = "v1.0.1 – 17 April 2025 – GPT structured + placeholder context"
+__version__ = "v1.0.2 – 17 April 2025 – GPT structured + placeholder context"
 print(f"🚀 API Version: {__version__}")
 from openai import OpenAI
 from flask import Flask, request, jsonify
@@ -96,9 +96,10 @@ def query():
     doc.save(doc_path)
 
     # === Generate JSON file ===
-    json_path = f"output/{full_name.replace(' ', '_')}.json"
-    with open(json_path, "w", encoding="utf-8") as f:
-        json.dump({"full_name": full_name, "query": query_text, "answer": answer}, f, indent=2)
+    # === Change 1047 ===
+    #json_path = f"output/{full_name.replace(' ', '_')}.json"
+    #with open(json_path, "w", encoding="utf-8") as f:
+    #    json.dump({"full_name": full_name, "query": query_text, "answer": answer}, f, indent=2)
 
     # === Send emails ===
     postmark = PostmarkClient(server_token=POSTMARK_API_TOKEN)
@@ -114,10 +115,13 @@ def query():
             continue
 
         attachments = []
-
-        for file_path, name, content_type in [
-            (doc_path, f"{role}_response.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
-            (json_path, f"{role}_response.json", "application/json")
+# === Change 1048 ===
+        #for file_path, name, content_type in [
+           # (doc_path, f"{role}_response.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
+           # (json_path, f"{role}_response.json", "application/json")
+       # ]:
+       for file_path, name, content_type in [
+            (doc_path, f"{role}_response.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
         ]:
             with open(file_path, "rb") as f:
                 content = base64.b64encode(f.read()).decode("utf-8")
