@@ -103,7 +103,7 @@ def query():
     # === Send emails ===
     postmark = PostmarkClient(server_token=POSTMARK_API_TOKEN)
 
-    recipients = {
+        recipients = {
         "User": user_email,
         "Supervisor": supervisor_email,
         "HR": hr_email
@@ -113,8 +113,7 @@ def query():
         if not recipient:
             continue
 
-# === Change 1201 ===
-
+        # === Change 1201 ===
         attachments = []
 
         for file_path, name, content_type in [
@@ -127,25 +126,26 @@ def query():
                     "Content": content,
                     "ContentType": content_type
                 })
-# === Change 1210 ===
+
+        # === Change 1210 ===
         final_text = f"Attached are your Word document.\n\n📅 Generated: {timestamp}"
         print("📧 Final TextBody:\n" + final_text)
-# === Change 1224 ===   
-    postmark.emails.send(
-        From="michael@justresults.co",
-        To=recipient,
-        Subject=f"{role} Response: {full_name}",
-        HtmlBody=f"""
-            <p>Attached is your Word document.</p>
-            <p><strong>📅 Generated:</strong> {timestamp}</p>
-        """,
-        Attachments=attachments
-    )
 
-    print(f"📤 Sent Word + JSON to {role} at {recipient}")
+        # === Change 1224 ===   
+        postmark.emails.send(
+            From="michael@justresults.co",
+            To=recipient,
+            Subject=f"{role} Response: {full_name}",
+            HtmlBody=f"""
+                <p>Attached is your Word document.</p>
+                <p><strong>📅 Generated:</strong> {timestamp}</p>
+            """,
+            Attachments=attachments
+        )
 
-return jsonify({"message": "✅ Emails sent with Word and JSON files."})
+        print(f"📤 Sent Word + JSON to {role} at {recipient}")
 
+    return jsonify({"message": "✅ Emails sent with Word and JSON files."})
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
