@@ -1,6 +1,8 @@
 import os
 import json
 import base64
+__version__ = "v1.0.0 – 17 April 2025 – GPT structured + placeholder context"
+print(f"🚀 API Version: {__version__}")
 from openai import OpenAI
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -70,7 +72,9 @@ def query():
 
     print(f"📥 Received query from {full_name}: {query_text}")
 
-    answer = ask_gpt(query_text)
+    
+    context = "Policy lookup not available. FAISS context will be restored soon."
+    answer = ask_gpt_with_context(query_text, context)
     print(f"🧠 GPT answer: {answer[:80]}...")
 
     os.makedirs("output", exist_ok=True)
