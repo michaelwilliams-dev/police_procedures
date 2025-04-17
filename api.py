@@ -119,16 +119,22 @@ def query():
     answer = ask_gpt_with_context(query_text, context)
     print(f"\U0001F9E0 GPT answer: {answer[:80]}...")
 
-    # === Word Output Only (No Email) ===
+    # === Ensure output folder exists ===
     os.makedirs("output", exist_ok=True)
+
+    # === Word Output Only (No Email) ===
     doc_path = f"output/{full_name.replace(' ', '_')}.docx"
 
     doc = Document()
     doc.add_heading(f"Response for {full_name}", level=1)
     doc.add_paragraph(f"\U0001F4C5 Generated: {timestamp}")
-    section_title = doc.add_paragraph()
-    section_title.add_run("\U0001F4C4 AI AUTOMATED CASE REVIEW").bold = True
+
+    doc.add_heading("Supporting Evidence", level=2)
+    doc.add_paragraph(context)
+
+    doc.add_heading("AI Analysis", level=2)
     add_markdown_bold(doc.add_paragraph(), answer)
+
     doc.save(doc_path)
     print(f"\U0001F4C4 Word saved: {doc_path}")
 
