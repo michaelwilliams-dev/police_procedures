@@ -113,31 +113,29 @@ def query():
         if not recipient:
             continue
 
-        attachments = []
 # === Change 1048 ===
-        #for file_path, name, content_type in [
-           # (doc_path, f"{role}_response.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
-           # (json_path, f"{role}_response.json", "application/json")
-       # ]:
-       for file_path, name, content_type in [
-            (doc_path, f"{role}_response.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-       ]:
-            with open(file_path, "rb") as f:
-                content = base64.b64encode(f.read()).decode("utf-8")
-                attachments.append({
-                    "Name": name,
-                    "Content": content,
-                    "ContentType": content_type
-                })
 
-        postmark.emails.send(
-            From="michael@justresults.co",
-            To=recipient,
-            Subject=f"{role} Response: {full_name}",
- # === Change 1006 === TextBody=f"Attached are your Word and JSON response files.",
-  TextBody=f"Attached are your Word and JSON response files.\n\n📅 Generated: {timestamp}",
-            Attachments=attachments
-        )
+    attachments = []
+
+    for file_path, name, content_type in [
+        (doc_path, f"{role}_response.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+    ]:
+        with open(file_path, "rb") as f:
+            content = base64.b64encode(f.read()).decode("utf-8")
+            attachments.append({
+                "Name": name,
+                "Content": content,
+                "ContentType": content_type
+            })
+
+    postmark.emails.send(
+        From="michael@justresults.co",
+        To=recipient,
+        Subject=f"{role} Response: {full_name}",
+        TextBody=f"Attached are your Word and JSON response files.\n\n📅 Generated: {timestamp}",
+        Attachments=attachments
+    )
+        
 
         print(f"📤 Sent Word + JSON to {role} at {recipient}")
 
