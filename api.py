@@ -1,26 +1,20 @@
 import os
 import json
 import base64
-
-# === Change 1028 ===
 import datetime
+import re
 
-__version__ = "v1.0.5 – 17 April 2025 – GPT structured + placeholder context"
+__version__ = "v1.0.6 – 17 April 2025 – Per-role Word formatting + timestamp"
 print(f"🚀 API Version: {__version__}")
+
 from openai import OpenAI
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from docx import Document
 from postmarker.core import PostmarkClient
 
-# === Change 1339 ===
-import re
-
 # === Helper: Convert **bold** to real bold in Word ===
 def add_markdown_bold(paragraph, text):
-    """
-    Converts **bold** to actual bold text in a Word paragraph.
-    """
     parts = re.split(r'(\*\*[^*]+\*\*)', text)
     for part in parts:
         if part.startswith("**") and part.endswith("**"):
@@ -28,7 +22,6 @@ def add_markdown_bold(paragraph, text):
             run.bold = True
         else:
             paragraph.add_run(part)
-
 
 # === Configuration ===
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -78,6 +71,7 @@ You are a police procedural administrator using UK law and internal operational 
     )
     return completion.choices[0].message.content.strip()
 
+# === Query route ===
 @app.route("/query", methods=["POST", "OPTIONS"])
 def query():
     if request.method == "OPTIONS":
@@ -85,10 +79,7 @@ def query():
 
     data = request.json
     query_text = data.get("query", "")
-
-# === Change 1135 ===
     full_name = data.get("full_name", "Anonymous")
-# === Change 1422 ===
     supervisor_name = data.get("supervisor_name", "Supervisor")
     timestamp = datetime.datetime.utcnow().strftime("%d %B %Y, %H:%M GMT")
 
@@ -98,101 +89,68 @@ def query():
 
     print(f"📥 Received query from {full_name}: {query_text}")
 
-    
     context = "Policy lookup not available. FAISS context will be restored soon."
     answer = ask_gpt_with_context(query_text, context)
     print(f"🧠 GPT answer: {answer[:80]}...")
 
     os.makedirs("output", exist_ok=True)
+    postmark = PostmarkClient(server_token=POSTMARK_API_TOKEN)
 
-    # === Generate Word doc ===
-    doc_path = f"output/{full_name.replace(' ', '_')}.docx"
+    recipients = {
+        "User": user_email,
+        "Supervisor": supervisor_email,
+        "HR": hr_email
+    }
 
-    #Change 1427
+    for role, recipient in recipients.items():
+        if not recipient:
+            continue
 
-    doc = Document()
-    doc.add_heading(f"Response for {full_name}", level=1)
+        # === Generate Word doc ===
+        doc_path = f"output/{role}_{full_name.replace(' ', '_')}.docx"
+        doc = Document()
+        doc.add_heading(f"Response for {full_name}", level=1)
 
-    if role == "Supervisor":
-        doc.add_paragraph(f"Copy for {supervisor_name}")
-    elif role == "HR":
-        doc.add_paragraph("Copy for HR / Filing")
+        if role == "Supervisor":
+            doc.add_paragraph(f"Copy for {supervisor_name}")
+        elif role == "HR":
+            doc.add_paragraph("Copy for HR / Filing")
 
-    doc.add_paragraph(f"📅 Generated: {timestamp}")
+        doc.add_paragraph(f"📅 Generated: {timestamp}")
+        section_title = doc.add_paragraph()
+        section_title.add_run("📄 AI AUTOMATED CASE REVIEW").bold = True
+        add_markdown_bold(doc.add_paragraph(), answer)
+        doc.save(doc_path)
 
-# Proper bold for section title
-section_title = doc.add_paragraph()
-section_title.add_run("📄 AI AUTOMATED CASE REVIEW").bold = True
+        # === Attachments ===
+        attachments = []
+        for file_path, name, content_type in [
+            (doc_path, f"{role}_response.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+        ]:
+            with open(file_path, "rb") as f:
+                content = base64.b64encode(f.read()).decode("utf-8")
+                attachments.append({
+                    "Name": name,
+                    "Content": content,
+                    "ContentType": content_type
+                })
 
-# Insert answer using markdown-to-bold logic
-add_markdown_bold(doc.add_paragraph(), answer)
-    
-    
-    # === Generate JSON file ===
-    # === Change 1047 ===
-    #json_path = f"output/{full_name.replace(' ', '_')}.json"
-    #with open(json_path, "w", encoding="utf-8") as f:
-    #    json.dump({"full_name": full_name, "query": query_text, "answer": answer}, f, indent=2)
+        # === Send email ===
+        print("📧 Sending email...")
+        postmark.emails.send(
+            From="michael@justresults.co",
+            To=recipient,
+            Subject=f"{role} Response: {full_name}",
+            HtmlBody=f"""
+                <p>Attached is your Word document.</p>
+                <p><strong>📅 Generated:</strong> {timestamp}</p>
+            """,
+            Attachments=attachments
+        )
+        print(f"📤 Sent Word to {role} at {recipient}")
 
-# === Send emails ===
-postmark = PostmarkClient(server_token=POSTMARK_API_TOKEN)
+    return jsonify({"message": "✅ Emails sent with personalized Word documents."})
 
-recipients = {
-    "User": user_email,
-    "Supervisor": supervisor_email,
-    "HR": hr_email
-}
-
-for role, recipient in recipients.items():
-    if not recipient:
-        continue
-
-    # === Generate Word doc ===
-    doc_path = f"output/{role}_{full_name.replace(' ', '_')}.docx"
-    doc = Document()
-    doc.add_heading(f"Response for {full_name}", level=1)
-
-    if role == "Supervisor":
-        doc.add_paragraph(f"Copy for {supervisor_name}")
-    elif role == "HR":
-        doc.add_paragraph("Copy for HR / Filing")
-
-    doc.add_paragraph(f"📅 Generated: {timestamp}")
-    section_title = doc.add_paragraph()
-    section_title.add_run("📄 AI AUTOMATED CASE REVIEW").bold = True
-    add_markdown_bold(doc.add_paragraph(), answer)
-
-    doc.save(doc_path)
-
-    # === Attachments ===
-    attachments = []
-    for file_path, name, content_type in [
-        (doc_path, f"{role}_response.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-    ]:
-        with open(file_path, "rb") as f:
-            content = base64.b64encode(f.read()).decode("utf-8")
-            attachments.append({
-                "Name": name,
-                "Content": content,
-                "ContentType": content_type
-            })
-
-    # === Send email ===
-    final_text = f"Attached are your Word document.\n\n📅 Generated: {timestamp}"
-    print("📧 Final TextBody:\n" + final_text)
-
-    postmark.emails.send(
-        From="michael@justresults.co",
-        To=recipient,
-        Subject=f"{role} Response: {full_name}",
-        HtmlBody=f"""
-            <p>Attached is your Word document.</p>
-            <p><strong>📅 Generated:</strong> {timestamp}</p>
-        """,
-        Attachments=attachments
-    )
-
-    print(f"📤 Sent Word to {role} at {recipient}")
-
-# ✅ Outside loop
-return jsonify({"message": "✅ Emails sent with personalized Word documents."})
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
