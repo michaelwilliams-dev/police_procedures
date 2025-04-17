@@ -1,7 +1,7 @@
 import os
 import json
 import base64
-__version__ = "v1.0.0 – 17 April 2025 – GPT structured + placeholder context"
+__version__ = "v1.0.1 – 17 April 2025 – GPT structured + placeholder context"
 print(f"🚀 API Version: {__version__}")
 from openai import OpenAI
 from flask import Flask, request, jsonify
@@ -66,6 +66,10 @@ def query():
     query_text = data.get("query", "")
     full_name = data.get("full_name", "Anonymous")
     
+# === Change 0844 === full_name = data.get("full_name", "Anonymous")
+    from datetime import datetime
+    timestamp = datetime.utcnow().strftime("%d %B %Y, %H:%M GMT")
+
     user_email = data.get("email")
     supervisor_email = data.get("supervisor_email")
     hr_email = data.get("hr_email")
@@ -122,7 +126,11 @@ def query():
             From="michael@justresults.co",
             To=recipient,
             Subject=f"{role} Response: {full_name}",
-            TextBody=f"Attached are your Word and JSON response files.",
+ # === Change 0844 === TextBody=f"Attached are your Word and JSON response files.",
+            TextBody=(
+                f"Attached are your Word and JSON response files.\n\n"
+                f"📅 Generated: {timestamp}"
+),
             Attachments=attachments
         )
 
