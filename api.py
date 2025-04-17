@@ -122,7 +122,7 @@ def query():
        # ]:
        for file_path, name, content_type in [
             (doc_path, f"{role}_response.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-        ]:
+       ]:
             with open(file_path, "rb") as f:
                 content = base64.b64encode(f.read()).decode("utf-8")
                 attachments.append({
