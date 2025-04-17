@@ -1,6 +1,10 @@
 import os
 import json
 import base64
+
+# === Change 1028 ===
+import datetime
+
 __version__ = "v1.0.1 – 17 April 2025 – GPT structured + placeholder context"
 print(f"🚀 API Version: {__version__}")
 from openai import OpenAI
@@ -66,9 +70,10 @@ def query():
     query_text = data.get("query", "")
     full_name = data.get("full_name", "Anonymous")
     
-# === Change 0844 === full_name = data.get("full_name", "Anonymous")
-    from datetime import datetime
-    timestamp = datetime.utcnow().strftime("%d %B %Y, %H:%M GMT")
+# === Change 1031 ===
+    full_name = data.get("full_name", "Anonymous")
+
+    timestamp = datetime.datetime.utcnow().strftime("%d %B %Y, %H:%M GMT")
 
     user_email = data.get("email")
     supervisor_email = data.get("supervisor_email")
