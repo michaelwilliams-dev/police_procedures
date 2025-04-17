@@ -68,9 +68,8 @@ def query():
 
     data = request.json
     query_text = data.get("query", "")
-    full_name = data.get("full_name", "Anonymous")
-    
-# === Change 1031 ===
+
+# === Change 1135 ===
     full_name = data.get("full_name", "Anonymous")
 
     timestamp = datetime.datetime.utcnow().strftime("%d %B %Y, %H:%M GMT")
