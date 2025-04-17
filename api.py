@@ -93,7 +93,7 @@ def query():
     doc.add_heading(f"Response for {full_name}", level=1)
     doc.add_paragraph("📄 AUTOMATED CASE REVIEW\n\n" + answer)
     # UPDATE 1258 Add timestamp clearly under heading
-    doc.add_paragraph(f"📅 Generated: {timestamp}"
+    doc.add_paragraph(f"📅 Generated: {timestamp}")
     doc.save(doc_path)
 
     # === Generate JSON file ===
