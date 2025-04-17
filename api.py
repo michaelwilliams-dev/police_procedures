@@ -88,7 +88,8 @@ def query():
 
 # === Change 1135 ===
     full_name = data.get("full_name", "Anonymous")
-
+# === Change 1422 ===
+    supervisor_name = data.get("supervisor_name", "Supervisor")
     timestamp = datetime.datetime.utcnow().strftime("%d %B %Y, %H:%M GMT")
 
     user_email = data.get("email")
@@ -106,15 +107,27 @@ def query():
 
     # === Generate Word doc ===
     doc_path = f"output/{full_name.replace(' ', '_')}.docx"
+
+    #Change 1427
+
     doc = Document()
     doc.add_heading(f"Response for {full_name}", level=1)
-    # ===doc.add_paragraph("📄 AUTOMATED CASE REVIEW\n\n" + answer)
-    doc.add_paragraph("📄 AUTOMATED CASE REVIEW")
-    add_markdown_bold(doc.add_paragraph(), answer)
-    # UPDATE 1258 Add timestamp clearly under heading
-    doc.add_paragraph(f"📅 Generated: {timestamp}")
-    doc.save(doc_path)
 
+    if role == "Supervisor":
+        doc.add_paragraph(f"Copy for {supervisor_name}")
+    elif role == "HR":
+        doc.add_paragraph("Copy for HR / Filing")
+
+    doc.add_paragraph(f"📅 Generated: {timestamp}")
+
+# Proper bold for section title
+section_title = doc.add_paragraph()
+section_title.add_run("📄 AI AUTOMATED CASE REVIEW").bold = True
+
+# Insert answer using markdown-to-bold logic
+add_markdown_bold(doc.add_paragraph(), answer)
+    
+    
     # === Generate JSON file ===
     # === Change 1047 ===
     #json_path = f"output/{full_name.replace(' ', '_')}.json"
