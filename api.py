@@ -12,7 +12,7 @@ from docx import Document
 import requests  # <-- Required for Mailjet
 
 __version__ = "v1.0.7-test"
-print(f"\U0001F680 API Version: {__version__}")
+print(f"\U0001F680 API Version: {__version__}")police_chunking
 
 # === Helper: Convert **bold** to real bold in Word ===
 def add_markdown_bold(paragraph, text):
@@ -147,8 +147,8 @@ def query():
 
 # === NEW: Mailjet Send Function ===
 def send_email_mailjet(to_email, subject, body_text, attachments=[]):
-    MAILJET_API_KEY = os.getenv("MAILJET_API_KEY")
-    MAILJET_SECRET_KEY = os.getenv("MAILJET_SECRET_KEY")
+    MAILJET_API_KEY = os.getenv("MJ_APIKEY_PUBLIC")
+    MAILJET_SECRET_KEY = os.getenv("MJ_APIKEY_PRIVATE")
 
     message = {
         "Messages": [{
@@ -203,5 +203,5 @@ def test_mailjet_send():
     return jsonify({"mailjet_status": status, "response": response})
 # === Run App ===
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
+    port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
