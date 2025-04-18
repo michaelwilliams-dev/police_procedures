@@ -12,7 +12,8 @@ from docx import Document
 import requests  # <-- Required for Mailjet
 
 __version__ = "v1.0.7-test"
-print(f"\U0001F680 API Version: {__version__}")police_chunking
+# === replace 1418
+print(f"\U0001F680 API Version: {__version__}")
 
 # === Helper: Convert **bold** to real bold in Word ===
 def add_markdown_bold(paragraph, text):
