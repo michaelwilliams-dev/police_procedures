@@ -88,7 +88,7 @@ You are a police procedural administrator using UK law and internal operational 
     )
     return completion.choices[0].message.content.strip()
 
-@app.route("/query", methods=["POST", "OPTIONS"])
+@app.route("/query", methods=["POST", "OPTIONS"], endpoint="query")
 def query():
     if request.method == "OPTIONS":
         return '', 204
@@ -200,7 +200,7 @@ def send_email_mailjet(to_emails, subject, body_text, attachments=[]):
     return response.status_code, response.json()
 
 # === NEW: Mailjet Endpoint ===
-@app.route("/query", methods=["POST", "OPTIONS"])
+@app.route("/query", methods=["POST", "OPTIONS"], endpoint="query_handler")
 def query_handler():
     if request.method == "OPTIONS":
         return '', 204
