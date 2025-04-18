@@ -199,10 +199,9 @@ def send_email_mailjet(to_emails, subject, body_text, attachments=[]):
     print(response.json())
     return response.status_code, response.json()
 
-# === NEW: Mailjet Test Endpoint ===
-
+# === NEW: Mailjet Endpoint ===
 @app.route("/query", methods=["POST", "OPTIONS"])
-def query():
+def query_handler():
     if request.method == "OPTIONS":
         return '', 204
 
@@ -292,7 +291,6 @@ Secure Maildrop
         "mailjet_status": status,
         "mailjet_response": response
     })
-
 # === Run App ===
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
