@@ -31,8 +31,15 @@ print("\U0001F512 OPENAI_API_KEY exists?", bool(OPENAI_API_KEY))
 client = OpenAI(api_key=OPENAI_API_KEY)
 
 # === Flask App Setup ===
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+
 app = Flask(__name__)
 CORS(app, origins=["https://www.aivs.uk"])
+
+@app.route('/')
+def index():
+    return "Welcome to the Police Procedures API"
 
 @app.after_request
 def apply_cors_headers(response):
