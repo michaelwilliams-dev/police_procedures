@@ -182,7 +182,7 @@ def send_email_mailjet(to_email, subject, body_text, attachments=[]):
     return response.status_code, response.json()
 
 # === NEW: Mailjet Test Endpoint ===
-@app.route("/test-mailjet", methods=["POST"])
+@app.route("/test-mailjet", methods=["GET", "POST"])
 def test_mailjet_send():
     os.makedirs("output", exist_ok=True)
     test_file = "output/test_document.docx"
@@ -194,14 +194,13 @@ def test_mailjet_send():
     doc.save(test_file)
 
     status, response = send_email_mailjet(
-        to_email="your@email.com",  # ⬅️ Change this to your real test email
+        to_email="michael@justresults.co",  # ⬅️ Use a real email address
         subject="✅ Mailjet Attachment Test",
         body_text="Here is your test Word doc attachment from Mailjet.",
         attachments=[test_file]
     )
 
     return jsonify({"mailjet_status": status, "response": response})
-
 # === Run App ===
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
