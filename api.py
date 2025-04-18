@@ -147,6 +147,16 @@ def query():
     doc.save(doc_path)
     print(f"\U0001F4C4 Word saved: {doc_path}")
 
+    # === Send Email ===
+    subject = f"AI Analysis for {full_name}"
+    body_text = f"Dear {full_name},\n\nPlease find attached the AI-generated analysis based on your query."
+    send_email_mailjet(
+     to_email="recipient@example.com",  # Replace with actual recipient's email
+     subject=subject,
+     body_text=body_text,
+     attachments=[doc_path]
+)
+
     return jsonify({
         "status": "ok",
         "message": "✅ Test mode: GPT response generated from FAISS context.",
@@ -154,7 +164,7 @@ def query():
     })
 
 # === NEW: Mailjet Send Function ===
-def send_email_mailjet(to_email, subject, body_text, attachments=[]):
+def send_email_mailjet(to_emails, subject, body_text, attachments=[]):
     MAILJET_API_KEY = os.getenv("MJ_APIKEY_PUBLIC")
     MAILJET_SECRET_KEY = os.getenv("MJ_APIKEY_PRIVATE")
 
@@ -164,7 +174,7 @@ def send_email_mailjet(to_email, subject, body_text, attachments=[]):
                 "Email": "noreply@securemaildrop.uk",
                 "Name": "Secure Maildrop"
             },
-            "To": [{"Email": to_email}],
+            "To": [{"Email": email} for email in to_emails],
             "Subject": subject,
             "TextPart": body_text,
             "HTMLPart": f"<pre>{body_text}</pre>",
@@ -190,25 +200,99 @@ def send_email_mailjet(to_email, subject, body_text, attachments=[]):
     return response.status_code, response.json()
 
 # === NEW: Mailjet Test Endpoint ===
-@app.route("/test-mailjet", methods=["GET", "POST"])
-def test_mailjet_send():
-    os.makedirs("output", exist_ok=True)
-    test_file = "output/test_document.docx"
 
-    # Generate test document
+@app.route("/query", methods=["POST", "OPTIONS"])
+def query():
+    if request.method == "OPTIONS":
+        return '', 204
+
+    data = request.json
+    query_text = data.get("query", "")
+    full_name = data.get("full_name", "Anonymous")
+    supervisor_name = data.get("supervisor_name", "Supervisor")
+    user_email = data.get("email")
+    supervisor_email = data.get("supervisor_email")
+    hr_email = data.get("hr_email")
+    timestamp = datetime.datetime.utcnow().strftime("%d %B %Y, %H:%M GMT")
+
+    print(f"📥 Received query from {full_name}: {query_text}")
+
+    # === FAISS Context ===
+    if faiss_index:
+        query_vector = client.embeddings.create(
+            input=[query_text.replace("\n", " ")],
+            model="text-embedding-3-small"
+        ).data[0].embedding
+
+        D, I = faiss_index.search(np.array([query_vector]).astype("float32"), 5)
+
+        matched_chunks = []
+        for i in I[0]:
+            chunk_file = metadata[i]["chunk_file"]
+            with open(f"data/{chunk_file}", "r", encoding="utf-8") as f:
+                matched_chunks.append(f.read().strip())
+
+        context = "\n\n---\n\n".join(matched_chunks)
+
+        print("🔍 FAISS matched files:")
+        for i in I[0]:
+            print(" -", metadata[i]["chunk_file"])
+    else:
+        context = "Policy lookup not available (FAISS index not loaded)."
+
+    # === GPT ===
+    answer = ask_gpt_with_context(query_text, context)
+    print(f"🧠 GPT answer: {answer[:80]}...")
+
+    # === Ensure output folder exists ===
+    os.makedirs("output", exist_ok=True)
+
+    # === Word Output ===
+    doc_path = f"output/{full_name.replace(' ', '_')}_{datetime.datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.docx"
+
     doc = Document()
-    doc.add_heading("Test Document", level=1)
-    doc.add_paragraph("This is a test attachment from Mailjet + Flask.")
-    doc.save(test_file)
+    doc.add_heading(f"Response for {full_name}", level=1)
+    doc.add_paragraph(f"📅 Generated: {timestamp}")
+
+    doc.add_heading("Supporting Evidence", level=2)
+    doc.add_paragraph(context)
+
+    doc.add_heading("AI Analysis", level=2)
+    add_markdown_bold(doc.add_paragraph(), answer)
+
+    doc.save(doc_path)
+    print(f"📄 Word saved: {doc_path}")
+
+    # === Compile list of recipients ===
+    recipients = [email for email in [user_email, supervisor_email, hr_email] if email]
+
+    if not recipients:
+        return jsonify({"error": "No valid email addresses provided."}), 400
+
+    subject = f"AI Analysis for {full_name} - {timestamp}"
+    body_text = f"""Dear {full_name},
+
+Please find attached the AI-generated analysis based on your query submitted on {timestamp}.
+
+Best regards,
+Secure Maildrop
+"""
 
     status, response = send_email_mailjet(
-        to_email="michael@justresults.co",  # ⬅️ Use a real email address
-        subject="✅ Mailjet Attachment Test",
-        body_text="Here is your test Word doc attachment from Mailjet.",
-        attachments=[test_file]
+        to_emails=recipients,
+        subject=subject,
+        body_text=body_text,
+        attachments=[doc_path]
     )
 
-    return jsonify({"mailjet_status": status, "response": response})
+    return jsonify({
+        "status": "ok",
+        "message": "✅ GPT response generated and email sent to recipients.",
+        "context_preview": context[:200],
+        "mailjet_status": status,
+        "mailjet_response": response
+    })
+
 # === Run App ===
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
