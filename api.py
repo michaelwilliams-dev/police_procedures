@@ -9,6 +9,7 @@ from openai import OpenAI
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from docx import Document
+import requests  # <-- Required for Mailjet
 
 __version__ = "v1.0.7-test"
 print(f"\U0001F680 API Version: {__version__}")
@@ -144,6 +145,64 @@ def query():
         "context_preview": context[:200]
     })
 
+# === NEW: Mailjet Send Function ===
+def send_email_mailjet(to_email, subject, body_text, attachments=[]):
+    MAILJET_API_KEY = os.getenv("MAILJET_API_KEY")
+    MAILJET_SECRET_KEY = os.getenv("MAILJET_SECRET_KEY")
+
+    message = {
+        "Messages": [{
+            "From": {
+                "Email": "noreply@securemaildrop.uk",
+                "Name": "Secure Maildrop"
+            },
+            "To": [{"Email": to_email}],
+            "Subject": subject,
+            "TextPart": body_text,
+            "HTMLPart": f"<pre>{body_text}</pre>",
+            "Attachments": [
+                {
+                    "ContentType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    "Filename": os.path.basename(file_path),
+                    "Base64Content": base64.b64encode(open(file_path, "rb").read()).decode()
+                }
+                for file_path in attachments
+            ]
+        }]
+    }
+
+    response = requests.post(
+        "https://api.mailjet.com/v3.1/send",
+        auth=(MAILJET_API_KEY, MAILJET_SECRET_KEY),
+        json=message
+    )
+
+    print(f"📤 Mailjet status: {response.status_code}")
+    print(response.json())
+    return response.status_code, response.json()
+
+# === NEW: Mailjet Test Endpoint ===
+@app.route("/test-mailjet", methods=["POST"])
+def test_mailjet_send():
+    os.makedirs("output", exist_ok=True)
+    test_file = "output/test_document.docx"
+
+    # Generate test document
+    doc = Document()
+    doc.add_heading("Test Document", level=1)
+    doc.add_paragraph("This is a test attachment from Mailjet + Flask.")
+    doc.save(test_file)
+
+    status, response = send_email_mailjet(
+        to_email="your@email.com",  # ⬅️ Change this to your real test email
+        subject="✅ Mailjet Attachment Test",
+        body_text="Here is your test Word doc attachment from Mailjet.",
+        attachments=[test_file]
+    )
+
+    return jsonify({"mailjet_status": status, "response": response})
+
+# === Run App ===
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
