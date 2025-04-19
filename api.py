@@ -87,13 +87,13 @@ def send_email_mailjet(to_emails, subject, body_text, attachments=[], timestamp=
 
     for recipient in to_emails:
         recipient_name = recipient.get('Name', 'Valued Recipient')
-        personalized_body = f"""Dear {recipient_name},
-
-{body_text}
-
-Best regards,
-Secure Maildrop
-"""
+        # Check if 'Dear' and 'Best regards' are already in body_text
+        if not body_text.startswith(f"Dear {recipient_name}"):
+            personalized_body = f"Dear {recipient_name},\n\n{body_text}"
+        else:
+            personalized_body = body_text
+        if not personalized_body.strip().endswith("Best regards,\nSecure Maildrop"):
+            personalized_body += "\n\nBest regards,\nSecure Maildrop"
 
         message = {
             "Messages": [{
@@ -202,8 +202,7 @@ def query_handler():
 
     Please find attached the AI-generated analysis based on your query submitted on {timestamp}.
 
-    Best regards,
-    Secure Maildrop
+  
     """
 
     status, response = send_email_mailjet(
