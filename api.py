@@ -81,49 +81,40 @@ You are a police procedural administrator using UK law and internal operational 
     return completion.choices[0].message.content.strip()
 
 
-def send_email_mailjet(to_emails, subject, body_text, attachments=[], timestamp=None):
+def send_email_mailjet(to_emails, cc_emails, subject, body_text, attachments=[], timestamp=None):
     MAILJET_API_KEY = os.getenv("MJ_APIKEY_PUBLIC")
     MAILJET_SECRET_KEY = os.getenv("MJ_APIKEY_PRIVATE")
 
-    for recipient in to_emails:
-        recipient_name = recipient.get('Name', 'Valued Recipient')
-        # Check if 'Dear' and 'Best regards' are already in body_text
-        if not body_text.startswith(f"To: {recipient_name}"):
-            personalized_body = f"To: {recipient_name},\n\n{body_text}"
-        else:
-            personalized_body = body_text
-        if not personalized_body.strip().endswith("Best regards,\nSecure Maildrop"):
-            personalized_body += "\n\n  ,\nSecure Maildrop"
+    message = {
+        "Messages": [{
+            "From": {
+                "Email": "noreply@securemaildrop.uk",
+                "Name": "Secure Maildrop"
+            },
+            "To": to_emails,
+            "Cc": cc_emails,
+            "Subject": subject,
+            "TextPart": body_text,
+            "HTMLPart": f"<pre>{body_text}</pre>",
+            "Attachments": [
+                {
+                    "ContentType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    "Filename": os.path.basename(file_path),
+                    "Base64Content": base64.b64encode(open(file_path, "rb").read()).decode()
+                }
+                for file_path in attachments
+            ]
+        }]
+    }
 
-        message = {
-            "Messages": [{
-                "From": {
-                    "Email": "noreply@securemaildrop.uk",
-                    "Name": "Secure Maildrop"
-                },
-                "To": [recipient],
-                "Subject": subject,
-                "TextPart": personalized_body,
-                "HTMLPart": f"<pre>{personalized_body}</pre>",
-                "Attachments": [
-                    {
-                        "ContentType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                        "Filename": os.path.basename(file_path),
-                        "Base64Content": base64.b64encode(open(file_path, "rb").read()).decode()
-                    }
-                    for file_path in attachments
-                ]
-            }]
-        }
+    response = requests.post(
+        "https://api.mailjet.com/v3.1/send",
+        auth=(MAILJET_API_KEY, MAILJET_SECRET_KEY),
+        json=message
+    )
 
-        response = requests.post(
-            "https://api.mailjet.com/v3.1/send",
-            auth=(MAILJET_API_KEY, MAILJET_SECRET_KEY),
-            json=message
-        )
-
-        print(f"📤 Mailjet status for {recipient['Email']}: {response.status_code}")
-        print(response.json())
+    print(f"📤 Mailjet status: {response.status_code}")
+    print(response.json())
 
 @app.route("/query", methods=["POST", "OPTIONS"])
 def query_handler():
