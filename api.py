@@ -82,6 +82,8 @@ You are a police procedural administrator using UK law and internal operational 
 
 
 def send_email_mailjet(to_emails, subject, body_text, attachments=[], timestamp=None):
+    if cc_emails is None:
+        cc_emails = []
     MAILJET_API_KEY = os.getenv("MJ_APIKEY_PUBLIC")
     MAILJET_SECRET_KEY = os.getenv("MJ_APIKEY_PRIVATE")
 
@@ -198,6 +200,7 @@ def query_handler():
         subject=subject,
         body_text=body_text,
         attachments=[doc_path]
+        cc_emails=[]
     )
 
     return jsonify({
