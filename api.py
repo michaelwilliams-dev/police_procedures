@@ -81,19 +81,16 @@ You are a police procedural administrator using UK law and internal operational 
     return completion.choices[0].message.content.strip()
 
 
-def send_email_mailjet(to_emails, subject, body_text, attachments=[], timestamp=None):
+def send_email_mailjet(to_emails, subject, attachments=[], timestamp=None):
     MAILJET_API_KEY = os.getenv("MJ_APIKEY_PUBLIC")
     MAILJET_SECRET_KEY = os.getenv("MJ_APIKEY_PRIVATE")
 
     for recipient in to_emails:
         recipient_name = recipient.get('Name', 'Valued Recipient')
-        # Check if 'Dear' and 'Best regards' are already in body_text
-        if not body_text.startswith(f"Dear {recipient_name}"):
-            personalized_body = f"Dear {recipient_name},\n\n{body_text}"
-        else:
-            personalized_body = body_text
-        if not personalized_body.strip().endswith("Best regards,\nSecure Maildrop"):
-            personalized_body += "\n\nBest regards,\nSecure Maildrop"
+        personalized_body = f"""To: {recipient_name}
+
+Please find attached the AI-generated analysis based on your query submitted on {timestamp}.
+"""
 
         message = {
             "Messages": [{
