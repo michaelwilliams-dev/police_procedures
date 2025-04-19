@@ -164,17 +164,24 @@ def query_handler():
     
     doc.add_paragraph(f"📅 Generated: {timestamp}")
 
-    doc.add_heading("Supporting Evidence", level=2)
-    doc.add_paragraph(context)
 
     doc.add_heading("AI Analysis", level=2)
     add_markdown_bold(doc.add_paragraph(), answer)
 
+    doc.add_heading("Supporting Evidence", level=2)
+    doc.add_paragraph(context)
+
     doc.save(doc_path)
     print(f"📄 Word saved: {doc_path}")
 
-    # Compile list of recipients
-    recipients = [email for email in [user_email, supervisor_email, hr_email] if email]
+    # Compile list of recipients with names Replace == 0901
+    recipients = []
+    if user_email:
+        recipients.append({"Email": user_email, "Name": full_name})
+    if supervisor_email:
+        recipients.append({"Email": supervisor_email, "Name": supervisor_name})
+    if hr_email:
+        recipients.append({"Email": hr_email, "Name": "HR Department"})
 
     if not recipients:
         return jsonify({"error": "No valid email addresses provided."}), 400
@@ -182,11 +189,11 @@ def query_handler():
     subject = f"AI Analysis for {full_name} - {timestamp}"
     body_text = f"""Dear {full_name},
 
-Please find attached the AI-generated analysis based on your query submitted on {timestamp}.
+    Please find attached the AI-generated analysis based on your query submitted on {timestamp}.
 
-Best regards,
-Secure Maildrop
-"""
+    Best regards,
+    Secure Maildrop
+    """
 
     status, response = send_email_mailjet(
         to_emails=recipients,
