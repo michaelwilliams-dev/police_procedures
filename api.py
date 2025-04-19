@@ -79,17 +79,19 @@ You are a police procedural administrator using UK law and internal operational 
     )
     return completion.choices[0].message.content.strip()
 
+**Change 0928:**
 def send_email_mailjet(to_emails, subject, body_text, attachments=[]):
     MAILJET_API_KEY = os.getenv("MJ_APIKEY_PUBLIC")
     MAILJET_SECRET_KEY = os.getenv("MJ_APIKEY_PRIVATE")
 
-    message = {
-        "Messages": [{
+    messages = []
+    for recipient in to_emails:
+        message = {
             "From": {
                 "Email": "noreply@securemaildrop.uk",
                 "Name": "Secure Maildrop"
             },
-            "To": to_emails,
+            "To": [recipient],
             "Subject": subject,
             "TextPart": body_text,
             "HTMLPart": f"<pre>{body_text}</pre>",
@@ -101,13 +103,15 @@ def send_email_mailjet(to_emails, subject, body_text, attachments=[]):
                 }
                 for file_path in attachments
             ]
-        }]
-    }
+        }
+        messages.append(message)
+
+    payload = {"Messages": messages}
 
     response = requests.post(
         "https://api.mailjet.com/v3.1/send",
         auth=(MAILJET_API_KEY, MAILJET_SECRET_KEY),
-        json=message
+        json=payload
     )
 
     print(f"📤 Mailjet status: {response.status_code}")
