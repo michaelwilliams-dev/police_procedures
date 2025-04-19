@@ -92,6 +92,7 @@ def send_email_mailjet(to_emails, subject, body_text, attachments=[], timestamp=
                 "Name": "Secure Maildrop"
             },
             "To": to_emails,
+            "Cc": cc_emails,
             "Subject": subject,
             "TextPart": body_text,
             "HTMLPart": f"<pre>{body_text}</pre>",
