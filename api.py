@@ -79,7 +79,7 @@ You are a police procedural administrator using UK law and internal operational 
     )
     return completion.choices[0].message.content.strip()
 
-**Change 0928:**
+
 def send_email_mailjet(to_emails, subject, body_text, attachments=[]):
     MAILJET_API_KEY = os.getenv("MJ_APIKEY_PUBLIC")
     MAILJET_SECRET_KEY = os.getenv("MJ_APIKEY_PRIVATE")
