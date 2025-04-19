@@ -201,10 +201,7 @@ def query_handler():
     body_text = f"""To: {full_name},
 
     Please find attached the AI-generated analysis based on your query submitted on {timestamp}.
-
-  
     """
-
     status, response = send_email_mailjet(
         to_emails=recipients,
         subject=subject,
