@@ -88,12 +88,12 @@ def send_email_mailjet(to_emails, subject, body_text, attachments=[], timestamp=
     for recipient in to_emails:
         recipient_name = recipient.get('Name', 'Valued Recipient')
         # Check if 'Dear' and 'Best regards' are already in body_text
-        if not body_text.startswith(f"Dear {recipient_name}"):
-            personalized_body = f"Dear {recipient_name},\n\n{body_text}"
+        if not body_text.startswith(f"To: {recipient_name}"):
+            personalized_body = f"To: {recipient_name},\n\n{body_text}"
         else:
             personalized_body = body_text
         if not personalized_body.strip().endswith("Best regards,\nSecure Maildrop"):
-            personalized_body += "\n\nBest regards,\nSecure Maildrop"
+            personalized_body += "\n\n  ,\nSecure Maildrop"
 
         message = {
             "Messages": [{
