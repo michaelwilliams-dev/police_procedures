@@ -81,7 +81,10 @@ You are a police procedural administrator using UK law and internal operational 
     return completion.choices[0].message.content.strip()
 
 
-def send_email_mailjet(to_emails, cc_emails, subject, body_text, attachments=[], timestamp=None):
+def send_email_mailjet(to_emails, subject, body_text, attachments=[], timestamp=None, cc_emails=None):
+    if cc_emails is None:
+        cc_emails = []
+
     MAILJET_API_KEY = os.getenv("MJ_APIKEY_PUBLIC")
     MAILJET_SECRET_KEY = os.getenv("MJ_APIKEY_PRIVATE")
 
