@@ -195,7 +195,6 @@ def query_handler():
     """
     status, response = send_email_mailjet(
         to_emails=recipients,
-        cc_emails=[],
         subject=subject,
         body_text=body_text,
         attachments=[doc_path]
