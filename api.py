@@ -81,7 +81,7 @@ You are a police procedural administrator using UK law and internal operational 
     return completion.choices[0].message.content.strip()
 
 
-def send_email_mailjet(to_emails, subject, attachments=[], timestamp=None):
+def send_email_mailjet(to_emails, subject, body_text, attachments=[], timestamp=None):
     MAILJET_API_KEY = os.getenv("MJ_APIKEY_PUBLIC")
     MAILJET_SECRET_KEY = os.getenv("MJ_APIKEY_PRIVATE")
 
@@ -89,7 +89,7 @@ def send_email_mailjet(to_emails, subject, attachments=[], timestamp=None):
         recipient_name = recipient.get('Name', 'Valued Recipient')
         personalized_body = f"""Dear {recipient_name},
 
-Please find attached the AI-generated analysis based on your query submitted on {timestamp}.
+{body_text}
 
 Best regards,
 Secure Maildrop
