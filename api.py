@@ -1,15 +1,16 @@
 import os
+import os.path
 import json
 import base64
 import datetime
 import re
 import numpy as np
 import faiss
+import requests
 from openai import OpenAI
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from docx import Document
-import requests
 
 __version__ = "v1.0.7-test"
 print(f"🚀 API Version: {__version__}")
@@ -80,43 +81,49 @@ You are a police procedural administrator using UK law and internal operational 
     return completion.choices[0].message.content.strip()
 
 
-def send_email_mailjet(to_emails, subject, body_text, attachments=[]):
+def send_email_mailjet(to_emails, subject, attachments=[], timestamp=None):
     MAILJET_API_KEY = os.getenv("MJ_APIKEY_PUBLIC")
     MAILJET_SECRET_KEY = os.getenv("MJ_APIKEY_PRIVATE")
 
-    messages = []
     for recipient in to_emails:
+        recipient_name = recipient.get('Name', 'Valued Recipient')
+        personalized_body = f"""Dear {recipient_name},
+
+Please find attached the AI-generated analysis based on your query submitted on {timestamp}.
+
+Best regards,
+Secure Maildrop
+"""
+
         message = {
-            "From": {
-                "Email": "noreply@securemaildrop.uk",
-                "Name": "Secure Maildrop"
-            },
-            "To": [recipient],
-            "Subject": subject,
-            "TextPart": body_text,
-            "HTMLPart": f"<pre>{body_text}</pre>",
-            "Attachments": [
-                {
-                    "ContentType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                    "Filename": os.path.basename(file_path),
-                    "Base64Content": base64.b64encode(open(file_path, "rb").read()).decode()
-                }
-                for file_path in attachments
-            ]
+            "Messages": [{
+                "From": {
+                    "Email": "noreply@securemaildrop.uk",
+                    "Name": "Secure Maildrop"
+                },
+                "To": [recipient],
+                "Subject": subject,
+                "TextPart": personalized_body,
+                "HTMLPart": f"<pre>{personalized_body}</pre>",
+                "Attachments": [
+                    {
+                        "ContentType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                        "Filename": os.path.basename(file_path),
+                        "Base64Content": base64.b64encode(open(file_path, "rb").read()).decode()
+                    }
+                    for file_path in attachments
+                ]
+            }]
         }
-        messages.append(message)
 
-    payload = {"Messages": messages}
+        response = requests.post(
+            "https://api.mailjet.com/v3.1/send",
+            auth=(MAILJET_API_KEY, MAILJET_SECRET_KEY),
+            json=message
+        )
 
-    response = requests.post(
-        "https://api.mailjet.com/v3.1/send",
-        auth=(MAILJET_API_KEY, MAILJET_SECRET_KEY),
-        json=payload
-    )
-
-    print(f"📤 Mailjet status: {response.status_code}")
-    print(response.json())
-    return response.status_code, response.json()
+        print(f"📤 Mailjet status for {recipient['Email']}: {response.status_code}")
+        print(response.json())
 
 @app.route("/query", methods=["POST", "OPTIONS"])
 def query_handler():
