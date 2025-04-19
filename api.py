@@ -89,7 +89,7 @@ def send_email_mailjet(to_emails, subject, body_text, attachments=[]):
                 "Email": "noreply@securemaildrop.uk",
                 "Name": "Secure Maildrop"
             },
-            "To": [{"Email": email} for email in to_emails],
+            "To": to_emails,
             "Subject": subject,
             "TextPart": body_text,
             "HTMLPart": f"<pre>{body_text}</pre>",
