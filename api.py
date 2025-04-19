@@ -198,7 +198,7 @@ def query_handler():
         return jsonify({"error": "No valid email addresses provided."}), 400
 
     subject = f"AI Analysis for {full_name} - {timestamp}"
-    body_text = f"""Dear {full_name},
+    body_text = f"""To: {full_name},
 
     Please find attached the AI-generated analysis based on your query submitted on {timestamp}.
 
