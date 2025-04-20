@@ -50,18 +50,14 @@ def ping():
 
 try:
     faiss_index = faiss.read_index("faiss_index/police_chunks.index")
-
-    # ✅ FIXED: Correct use of 'with' statement
-    with open("faiss_index/police_metadata_tagged.json", "r", encoding="utf-8") as f:
+    with open("faiss_index/police_metadata.json", "r", encoding="utf-8") as f:
         metadata = json.load(f)
-
     print("✅ FAISS index and metadata loaded.")
-
 except Exception as e:
     faiss_index = None
     metadata = []
     print("⚠️ Failed to load FAISS index:", str(e))
-
+### START HERE
 def ask_gpt_with_context(data, context):
     query = data.get("query", "")
     job_title = data.get("job_title", "Not specified")
@@ -74,14 +70,14 @@ def ask_gpt_with_context(data, context):
     funnel_3 = data.get("funnel_3", "Not specified")
 
     prompt = f"""
-You are responding to an internal English police procedures query via a secure reporting system.
+You are responding to an internal police procedures query via a secure reporting system.
 
 All responses must:
 - Be based on UK law, police operational guidance, and internal procedures only.
 - Include British spelling, tone, and regulatory references.
 
 ### Enquiry:
-"{query}"
+\"{query}\"
 
 ### Context from FAISS Index:
 {context}
@@ -111,9 +107,9 @@ Please generate a structured response that includes:
         messages=[{"role": "user", "content": prompt}],
         temperature=0.3
     )
-    return completion.choices[0].message.content.strip()
+    return completion.choices[0].message.content.strip())
+**HERE**
 
-### HERE
 def send_email_mailjet(to_emails, subject, body_text, attachments=[], timestamp=None):
    
     MAILJET_API_KEY = os.getenv("MJ_APIKEY_PUBLIC")
@@ -172,12 +168,23 @@ def query_handler():
             model="text-embedding-3-small"
         ).data[0].embedding
 
-      
+        D, I = faiss_index.search(np.array([query_vector]).astype("float32"), 5)
+
+        matched_chunks = []
+        for i in I[0]:
+            chunk_file = metadata[i]["chunk_file"]
+            with open(f"data/{chunk_file}", "r", encoding="utf-8") as f:
+                matched_chunks.append(f.read().strip())
+
+        context = "\n\n---\n\n".join(matched_chunks)
+
+        print("🔍 FAISS matched files:")
+        for i in I[0]:
+            print(" -", metadata[i]["chunk_file"])
     else:
         context = "Policy lookup not available (FAISS index not loaded)."
 
     answer = ask_gpt_with_context(data, context)
-
     print(f"🧠 GPT answer: {answer[:80]}...")
 
     os.makedirs("output", exist_ok=True)
