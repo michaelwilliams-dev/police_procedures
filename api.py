@@ -31,9 +31,9 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 app = Flask(__name__)
 CORS(app, origins=["https://www.aivs.uk"])
 
-@app.route('/')
-def index():
-    return "Welcome to the Police Procedures API"
+@app.route("/", methods=["GET"])
+def home():
+    return "✅ Police Procedures API is running", 200
 
 @app.after_request
 def apply_cors_headers(response):
