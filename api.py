@@ -50,7 +50,7 @@ def ping():
 
 try:
     faiss_index = faiss.read_index("faiss_index/police_chunks.index")
-    with open("faiss_index/police_metadata.json", "r", encoding="utf-8") as f:
+    open("faiss_index/police_metadata_tagged.json", "r", encoding="utf-8") as f:
         metadata = json.load(f)
     print("✅ FAISS index and metadata loaded.")
 except Exception as e:
@@ -70,7 +70,7 @@ def ask_gpt_with_context(data, context):
     funnel_3 = data.get("funnel_3", "Not specified")
 
     prompt = f"""
-You are responding to an internal police procedures query via a secure reporting system.
+You are responding to an internal English police procedures query via a secure reporting system.
 
 All responses must:
 - Be based on UK law, police operational guidance, and internal procedures only.
@@ -170,11 +170,14 @@ def query_handler():
 
         D, I = faiss_index.search(np.array([query_vector]).astype("float32"), 5)
 
+        discipline_filter = data.get("discipline", "").lower()
         matched_chunks = []
+
         for i in I[0]:
-            chunk_file = metadata[i]["chunk_file"]
-            with open(f"data/{chunk_file}", "r", encoding="utf-8") as f:
-                matched_chunks.append(f.read().strip())
+           chunk = metadata[i]
+           if discipline_filter in chunk.get("discipline", "").lower():
+               with open(f"data/{chunk['chunk_file']}", "r", encoding="utf-8") as f:
+                   matched_chunks.append(f.read().strip())
 
         context = "\n\n---\n\n".join(matched_chunks)
 
