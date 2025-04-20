@@ -107,7 +107,7 @@ Please generate a structured response that includes:
         messages=[{"role": "user", "content": prompt}],
         temperature=0.3
     )
-    return completion.choices[0].message.content.strip())
+    return completion.choices[0].message.content.strip()
 **HERE**
 
 def send_email_mailjet(to_emails, subject, body_text, attachments=[], timestamp=None):
