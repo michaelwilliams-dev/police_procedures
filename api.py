@@ -57,22 +57,51 @@ except Exception as e:
     faiss_index = None
     metadata = []
     print("⚠️ Failed to load FAISS index:", str(e))
+### START HERE
+def ask_gpt_with_context(data, context):
+    query = data.get("query", "")
+    job_title = data.get("job_title", "Not specified")
+    rank_level = data.get("rank_level", "Not specified")
+    timeline = data.get("timeline", "Not specified")
+    discipline = data.get("discipline", "Not specified")
+    site = data.get("site", "Not specified")
+    funnel_1 = data.get("funnel_1", "Not specified")
+    funnel_2 = data.get("funnel_2", "Not specified")
+    funnel_3 = data.get("funnel_3", "Not specified")
 
-def ask_gpt_with_context(query, context):
     prompt = f"""
-You are a police procedural administrator using UK law and internal operational guidance.
+You are responding to an internal police procedures query via a secure reporting system.
 
-**Supporting Evidence:**
+All responses must:
+- Be based on UK law, police operational guidance, and internal procedures only.
+- Include British spelling, tone, and regulatory references.
+
+### Enquiry:
+"{query}"
+
+### Context from FAISS Index:
 {context}
 
-**Question:**
-{query}
+### Enquirer Details:
+- Job Title: {job_title}
+- Rank Level: {rank_level}
+- Timeline: {timeline}
+- Discipline: {discipline}
+- Site: {site}
 
-**Analysis:**
-- Explain what the evidence implies.
-- List 2–4 clear actions the staff should take.
-- Flag any compliance or reporting issues.
+### Additional Focus:
+- Support Need: {funnel_1}
+- Current Status: {funnel_2}
+- Follow-Up Expectation: {funnel_3}
+
+### Your Task:
+Please generate a structured response that includes:
+
+1. **Enquirer Reply** – in plain English, appropriate for the rank level.
+2. **Action Sheet** – bullet-point steps the enquirer should follow.
+3. **Policy Notes** – cite any relevant UK policing policies, SOPs, or legal codes.
 """
+
     completion = client.chat.completions.create(
         model="gpt-4",
         messages=[{"role": "user", "content": prompt}],
@@ -80,7 +109,7 @@ You are a police procedural administrator using UK law and internal operational 
     )
     return completion.choices[0].message.content.strip()
 
-
+### HERE
 def send_email_mailjet(to_emails, subject, body_text, attachments=[], timestamp=None):
    
     MAILJET_API_KEY = os.getenv("MJ_APIKEY_PUBLIC")
@@ -155,7 +184,8 @@ def query_handler():
     else:
         context = "Policy lookup not available (FAISS index not loaded)."
 
-    answer = ask_gpt_with_context(query_text, context)
+    answer = ask_gpt_with_context(data, context)
+
     print(f"🧠 GPT answer: {answer[:80]}...")
 
     os.makedirs("output", exist_ok=True)
