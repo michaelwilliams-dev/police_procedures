@@ -162,13 +162,13 @@ def query_handler():
 
     print(f"📥 Received query from {full_name}: {query_text}")
 
- if faiss_index:
+if faiss_index:
     query_vector = client.embeddings.create(
         input=[query_text.replace("\n", " ")],
         model="text-embedding-3-small"
     ).data[0].embedding
 
-    D, I = faiss_index.search(np.array([query_vector]).astype("float32"), 5)
+    D, I = faiss_index.search(np.array([query_vector]).astype("float32"), 3)
 
     matched_chunks = []
     for i in I[0]:
@@ -184,7 +184,6 @@ def query_handler():
 
     print("📄 FAISS Context Preview (first 500 chars):\n")
     print(context[:500])
-
 else:
     context = "Policy lookup not available (FAISS index not loaded)."
 
