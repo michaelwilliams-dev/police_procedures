@@ -162,27 +162,31 @@ def query_handler():
 
     print(f"📥 Received query from {full_name}: {query_text}")
 
-    if faiss_index:
-        query_vector = client.embeddings.create(
-            input=[query_text.replace("\n", " ")],
-            model="text-embedding-3-small"
-        ).data[0].embedding
+ if faiss_index:
+    query_vector = client.embeddings.create(
+        input=[query_text.replace("\n", " ")],
+        model="text-embedding-3-small"
+    ).data[0].embedding
 
-        D, I = faiss_index.search(np.array([query_vector]).astype("float32"), 5)
+    D, I = faiss_index.search(np.array([query_vector]).astype("float32"), 5)
 
-        matched_chunks = []
-        for i in I[0]:
-            chunk_file = metadata[i]["chunk_file"]
-            with open(f"data/{chunk_file}", "r", encoding="utf-8") as f:
-                matched_chunks.append(f.read().strip())
+    matched_chunks = []
+    for i in I[0]:
+        chunk_file = metadata[i]["chunk_file"]
+        with open(f"data/{chunk_file}", "r", encoding="utf-8") as f:
+            matched_chunks.append(f.read().strip())
 
-        context = "\n\n---\n\n".join(matched_chunks)
+    context = "\n\n---\n\n".join(matched_chunks)
 
-        print("🔍 FAISS matched files:")
-        for i in I[0]:
-            print(" -", metadata[i]["chunk_file"])
-    else:
-        context = "Policy lookup not available (FAISS index not loaded)."
+    print("🔍 FAISS matched files:")
+    for i in I[0]:
+        print(" -", metadata[i]["chunk_file"])
+
+    print("📄 FAISS Context Preview (first 500 chars):\n")
+    print(context[:500])
+
+else:
+    context = "Policy lookup not available (FAISS index not loaded)."
 
     answer = ask_gpt_with_context(data, context)
     print(f"🧠 GPT answer: {answer[:80]}...")
