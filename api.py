@@ -99,7 +99,7 @@ All responses must:
 ### Your Task:
 Please generate a structured response that includes:
 
-1. **Enquirer Reply** – in plain English, appropriate for the rank level.
+#1. **Enquirer Reply** – in plain English, appropriate for the rank level.
 2. **Action Sheet** – bullet-point steps the enquirer should follow.
 3. **Policy Notes** – cite any relevant UK policing policies, SOPs, or legal codes.
 """
