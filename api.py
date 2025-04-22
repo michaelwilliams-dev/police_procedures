@@ -309,8 +309,11 @@ def generate_response():
     current_title = None
     for i, part in enumerate(sections):
         if i == 0 and part.strip():
-            # If GPT didn't label the first section, treat as intro
-            structured["Enquirer Reply"] = part.strip()
+            # 🔁 Clean if GPT included "Enquirer Reply" or "Hello" manually
+            cleaned = part.strip()
+            cleaned = re.sub(r'^\s*Enquirer Reply\s*', '', cleaned, flags=re.IGNORECASE)
+            cleaned = re.sub(r'^\s*Hello,\s*', '', cleaned, flags=re.IGNORECASE)
+            structured["Enquirer Reply"] = cleaned
         elif i % 2 == 1:
             current_title = part.strip()
         elif i % 2 == 0 and current_title:
