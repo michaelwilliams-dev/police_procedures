@@ -281,6 +281,7 @@ def generate_response():
     # 🧼 Only one heading, not duplicated
     doc.add_heading(f"Response for {full_name}", level=1)
     doc.add_paragraph(f"Generated: {timestamp}")
+    doc.add_paragraph("AI Enquiry Reply\n----------------\n")  # ✅ NEW
     doc.add_heading("AI Analysis", level=2)
     add_markdown_bold(doc.add_paragraph(), answer)
 
