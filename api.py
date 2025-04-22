@@ -11,6 +11,7 @@ from openai import OpenAI
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from docx import Document
+from docx.shared import Mm  
 
 __version__ = "v1.0.7-test"
 print(f"🚀 API Version: {__version__}")
@@ -245,11 +246,20 @@ def generate_response():
     os.makedirs("output", exist_ok=True)
     doc_path = f"output/{full_name.replace(' ', '_')}_{datetime.datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.docx"
 
+    
     doc = Document()
+
+    # ✅ Set to A4 size
+    section = doc.sections[0]
+    section.page_height = Mm(297)
+    section.page_width = Mm(210)
+
+    # 🧼 Only one heading, not duplicated
     doc.add_heading(f"Response for {full_name}", level=1)
     doc.add_paragraph(f"Generated: {timestamp}")
     doc.add_heading("AI Analysis", level=2)
     add_markdown_bold(doc.add_paragraph(), answer)
+
     doc.save(doc_path)
     print(f"📄 Word saved: {doc_path}")
 
