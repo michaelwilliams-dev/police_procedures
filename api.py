@@ -220,6 +220,7 @@ This document was generated following a query submitted by {full_name}. Please f
 @app.route("/generate", methods=["POST"])
 def generate_response():
     data = request.get_json()
+    print("📥 /generate route hit")
     query_text = data.get("query")
     full_name = data.get("full_name", "User")
     user_email = data.get("user_email")
