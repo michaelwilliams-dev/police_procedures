@@ -195,8 +195,8 @@ def generate_response():
     doc.add_paragraph(f"🗕️ Generated: {timestamp}")
     doc.add_heading("AI Analysis", level=2)
     add_markdown_bold(doc.add_paragraph(), answer)
-    doc.add_heading("Supporting Evidence", level=2)
-    doc.add_paragraph(context)
+    #doc.add_heading("Supporting Evidence", level=2)
+    #doc.add_paragraph(context)
     doc.save(doc_path)
     print(f"📄 Word saved: {doc_path}")
 
