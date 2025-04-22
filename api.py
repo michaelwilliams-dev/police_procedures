@@ -113,10 +113,14 @@ def generate_reviewed_response(prompt):
     )
     initial_response = completion.choices[0].message.content.strip()
 
+    # 🧼 Strip polite sign-offs before review
+    import re
+    initial_response = re.sub(r'(Best regards,|Yours sincerely,|Kind regards,)[\s\S]*$', '', initial_response, flags=re.IGNORECASE).strip() 
+
     print("🔄 Reviewing GPT response...")
 
     # Strip FAISS context before review
-    stripped_response = initial_response.split("### Context from FAISS Index:")[0] + "\n(Context stripped for review clarity)"
+    stripped_response = initial_response.split("### Context from FAISS Index:")[0] + "\n(Note:Context stripped for review clarity)"
 
     review_prompt = f"""
 You are an internal reviewer for UK police AI guidance.
