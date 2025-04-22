@@ -57,7 +57,7 @@ except Exception as e:
     faiss_index = None
     metadata = []
     print("⚠️ Failed to load FAISS index:", str(e))
-### START HERE
+
 def ask_gpt_with_context(data, context):
     query = data.get("query", "")
     job_title = data.get("job_title", "Not specified")
@@ -101,13 +101,33 @@ Please generate a structured response that includes:
 2. **Action Sheet** – bullet-point steps the enquirer should follow.
 3. **Policy Notes** – cite any relevant UK policing policies, SOPs, or legal codes.
 """
-
+def generate_reviewed_response(prompt):
     completion = client.chat.completions.create(
         model="gpt-4",
         messages=[{"role": "user", "content": prompt}],
         temperature=0.3
     )
-    return completion.choices[0].message.content.strip()
+    initial_response = completion.choices[0].message.content.strip()
+
+    review_prompt = f"""
+You are an internal reviewer for UK police AI guidance.
+
+Your task:
+Please improve the following structured response, focusing on tone, clarity, and legal/procedural accuracy.
+
+The response must remain professional, concise, and aligned with UK police operational guidance and tone. If the answer is already clear and correct, return it unchanged.
+
+--- START RESPONSE ---
+{initial_response}
+--- END RESPONSE ---
+"""
+
+    review_completion = client.chat.completions.create(
+        model="gpt-4",
+        messages=[{"role": "user", "content": review_prompt}],
+        temperature=0.2
+    )
+    return review_completion.choices[0].message.content.strip()
 
 
 def send_email_mailjet(to_emails, subject, body_text, attachments=[], timestamp=None):
@@ -146,46 +166,41 @@ def send_email_mailjet(to_emails, subject, body_text, attachments=[], timestamp=
     print(f"📤 Mailjet status: {response.status_code}")
     print(response.json())
 
-@app.route("/query", methods=["POST", "OPTIONS"])
-def query_handler():
-    if request.method == "OPTIONS":
-        return '', 204
-
-    data = request.json
-    query_text = data.get("query", "")
-    full_name = data.get("full_name", "Anonymous")
-    supervisor_name = data.get("supervisor_name", "Supervisor")
-    user_email = data.get("email")
+@app.route("/generate", methods=["POST"])
+def generate_response():
+    data = request.get_json()
+    query_text = data.get("query")
+    full_name = data.get("full_name", "User")
+    user_email = data.get("user_email")
     supervisor_email = data.get("supervisor_email")
     hr_email = data.get("hr_email")
-    timestamp = datetime.datetime.utcnow().strftime("%d %B %Y, %H:%M GMT")
+    supervisor_name = data.get("supervisor_name", "Supervisor")
+    timestamp = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
 
-    print(f"📥 Received query from {full_name}: {query_text}")
+    if faiss_index:
+        query_vector = client.embeddings.create(
+            input=[query_text.replace("\n", " ")],
+            model="text-embedding-3-small"
+        ).data[0].embedding
 
-if faiss_index:
-    query_vector = client.embeddings.create(
-        input=[query_text.replace("\n", " ")],
-        model="text-embedding-3-small"
-    ).data[0].embedding
+        D, I = faiss_index.search(np.array([query_vector]).astype("float32"), 3)
 
-    D, I = faiss_index.search(np.array([query_vector]).astype("float32"), 3)
+        matched_chunks = []
+        for i in I[0]:
+            chunk_file = metadata[i]["chunk_file"]
+            with open(f"data/{chunk_file}", "r", encoding="utf-8") as f:
+                matched_chunks.append(f.read().strip())
 
-    matched_chunks = []
-    for i in I[0]:
-        chunk_file = metadata[i]["chunk_file"]
-        with open(f"data/{chunk_file}", "r", encoding="utf-8") as f:
-            matched_chunks.append(f.read().strip())
+        context = "\n\n---\n\n".join(matched_chunks)
 
-    context = "\n\n---\n\n".join(matched_chunks)
+        print("🔍 FAISS matched files:")
+        for i in I[0]:
+            print(" -", metadata[i]["chunk_file"])
 
-    print("🔍 FAISS matched files:")
-    for i in I[0]:
-        print(" -", metadata[i]["chunk_file"])
-
-    print("📄 FAISS Context Preview (first 500 chars):\n")
-    print(context[:500])
-else:
-    context = "Policy lookup not available (FAISS index not loaded)."
+        print("📄 FAISS Context Preview (first 500 chars):\n")
+        print(context[:500])
+    else:
+        context = "Policy lookup not available (FAISS index not loaded)."
 
     answer = ask_gpt_with_context(data, context)
     print(f"🧠 GPT answer: {answer[:80]}...")
@@ -196,20 +211,14 @@ else:
 
     doc = Document()
     doc.add_heading(f"Response for {full_name}", level=1)
-    
     doc.add_paragraph(f"📅 Generated: {timestamp}")
-
-
     doc.add_heading("AI Analysis", level=2)
     add_markdown_bold(doc.add_paragraph(), answer)
-
     doc.add_heading("Supporting Evidence", level=2)
     doc.add_paragraph(context)
-
     doc.save(doc_path)
     print(f"📄 Word saved: {doc_path}")
 
-    # Compile list of recipients with names Replace == 0901
     recipients = []
     if user_email:
         recipients.append({"Email": user_email, "Name": full_name})
@@ -224,14 +233,13 @@ else:
     subject = f"AI Analysis for {full_name} - {timestamp}"
     body_text = f"""To: {full_name},
 
-    Please find attached the AI-generated analysis based on your query submitted on {timestamp}.
-    """
+Please find attached the AI-generated analysis based on your query submitted on {timestamp}.
+"""
     status, response = send_email_mailjet(
         to_emails=recipients,
         subject=subject,
         body_text=body_text,
         attachments=[doc_path]
-      
     )
 
     return jsonify({
