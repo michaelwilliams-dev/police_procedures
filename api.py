@@ -125,7 +125,7 @@ def generate_reviewed_response(prompt):
 
     # 📏 Log length and skip review if too long
     print(f"📏 Initial GPT response length: {len(initial_response)} characters")
-    if len(initial_response) > 2000:
+    if len(initial_response) > 1500:
         print("⚠️ Skipping review due to response length")
         return initial_response
 
