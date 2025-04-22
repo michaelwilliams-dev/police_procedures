@@ -122,12 +122,12 @@ The response must remain professional, concise, and aligned with UK police opera
 --- END RESPONSE ---
 """
 
-    review_completion = client.chat.completions.create(
-        model="gpt-4",
-        messages=[{"role": "user", "content": review_prompt}],
-        temperature=0.2
-    )
-    return review_completion.choices[0].message.content.strip()
+    #review_completion = client.chat.completions.create(
+        #model="gpt-4",
+        #messages=[{"role": "user", "content": review_prompt}],
+        #temperature=0.2
+    #)
+    #return review_completion.choices[0].message.content.strip()
 
 
 def send_email_mailjet(to_emails, subject, body_text, attachments=[], timestamp=None):
