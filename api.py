@@ -115,12 +115,22 @@ def generate_reviewed_response(prompt):
 
     # 🧼 Strip polite sign-offs before review
     import re
-    initial_response = re.sub(r'(Best regards,|Yours sincerely,|Kind regards,)[\s\S]*$', '', initial_response, flags=re.IGNORECASE).strip() 
+    initial_response = re.sub(
+        r'(Best regards,|Yours sincerely,|Kind regards,)[\s\S]*$',
+        '',
+        initial_response,
+        flags=re.IGNORECASE
+    ).strip()
+
+    # 📏 Log length and skip review if too long
+    print(f"📏 Initial GPT response length: {len(initial_response)} characters")
+    if len(initial_response) > 2000:
+        print("⚠️ Skipping review due to response length")
+        return initial_response
 
     print("🔄 Reviewing GPT response...")
 
-    # Strip FAISS context before review
-    stripped_response = initial_response.split("### Context from FAISS Index:")[0] + "\n(Note:Context stripped for review clarity)"
+    stripped_response = initial_response.split("### Context from FAISS Index:")[0].strip()
 
     review_prompt = f"""
 You are an internal reviewer for UK police AI guidance.
