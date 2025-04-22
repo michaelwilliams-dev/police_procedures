@@ -101,37 +101,17 @@ Please generate a structured response that includes:
 2. **Action Sheet** – bullet-point steps the enquirer should follow.
 3. **Policy Notes** – cite any relevant UK policing policies, SOPs, or legal codes.
 """
+    return generate_reviewed_response(prompt)
+
 def generate_reviewed_response(prompt):
     completion = client.chat.completions.create(
         model="gpt-4",
         messages=[{"role": "user", "content": prompt}],
         temperature=0.3
     )
-    initial_response = completion.choices[0].message.content.strip()
-
-    review_prompt = f"""
-You are an internal reviewer for UK police AI guidance.
-
-Your task:
-Please improve the following structured response, focusing on tone, clarity, and legal/procedural accuracy.
-
-The response must remain professional, concise, and aligned with UK police operational guidance and tone. If the answer is already clear and correct, return it unchanged.
-
---- START RESPONSE ---
-{initial_response}
---- END RESPONSE ---
-"""
-
-    #review_completion = client.chat.completions.create(
-        #model="gpt-4",
-        #messages=[{"role": "user", "content": review_prompt}],
-        #temperature=0.2
-    #)
-    #return review_completion.choices[0].message.content.strip()
-
+    return completion.choices[0].message.content.strip()
 
 def send_email_mailjet(to_emails, subject, body_text, attachments=[], timestamp=None):
-   
     MAILJET_API_KEY = os.getenv("MJ_APIKEY_PUBLIC")
     MAILJET_SECRET_KEY = os.getenv("MJ_APIKEY_PRIVATE")
 
@@ -142,7 +122,6 @@ def send_email_mailjet(to_emails, subject, body_text, attachments=[], timestamp=
                 "Name": "Secure Maildrop"
             },
             "To": to_emails,
-            
             "Subject": subject,
             "TextPart": body_text,
             "HTMLPart": f"<pre>{body_text}</pre>",
@@ -192,26 +171,28 @@ def generate_response():
                 matched_chunks.append(f.read().strip())
 
         context = "\n\n---\n\n".join(matched_chunks)
-
         print("🔍 FAISS matched files:")
         for i in I[0]:
             print(" -", metadata[i]["chunk_file"])
-
         print("📄 FAISS Context Preview (first 500 chars):\n")
         print(context[:500])
     else:
         context = "Policy lookup not available (FAISS index not loaded)."
 
     answer = ask_gpt_with_context(data, context)
+
+    if not answer:
+        print("❌ GPT returned None.")
+        return jsonify({"error": "GPT failed to generate a response."}), 500
+
     print(f"🧠 GPT answer: {answer[:80]}...")
 
     os.makedirs("output", exist_ok=True)
-
     doc_path = f"output/{full_name.replace(' ', '_')}_{datetime.datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.docx"
 
     doc = Document()
     doc.add_heading(f"Response for {full_name}", level=1)
-    doc.add_paragraph(f"📅 Generated: {timestamp}")
+    doc.add_paragraph(f"🗕️ Generated: {timestamp}")
     doc.add_heading("AI Analysis", level=2)
     add_markdown_bold(doc.add_paragraph(), answer)
     doc.add_heading("Supporting Evidence", level=2)
@@ -235,6 +216,7 @@ def generate_response():
 
 Please find attached the AI-generated analysis based on your query submitted on {timestamp}.
 """
+
     status, response = send_email_mailjet(
         to_emails=recipients,
         subject=subject,
