@@ -114,19 +114,28 @@ def generate_reviewed_response(prompt):
     initial_response = completion.choices[0].message.content.strip()
 
     print("🔄 Reviewing GPT response...")
+
+    # Strip FAISS context before review
+    stripped_response = initial_response.split("### Context from FAISS Index:")[0] + "\n(Context stripped for review clarity)"
+
     review_prompt = f"""
 You are an internal reviewer for UK police AI guidance.
 
 Your task:
-Please improve the following structured response, focusing on tone, clarity, and legal/procedural accuracy.
+Please improve the following structured response, focusing on:
 
-The response must remain professional, concise, and aligned with UK police operational guidance and tone.
-If the answer is already clear and correct, return it unchanged.
+- Clarity and accuracy
+- Tone and readability
+- Procedural and legal relevance
+- And expand on any areas where further explanation, action steps, or justification would be useful to the reader
+
+The revised response must remain professional, detailed, and aligned with UK police operational guidance.
 
 --- START RESPONSE ---
-{initial_response}
+{stripped_response}
 --- END RESPONSE ---
 """
+
     review_completion = client.chat.completions.create(
         model="gpt-4",
         messages=[{"role": "user", "content": review_prompt}],
@@ -187,7 +196,7 @@ def generate_response():
             model="text-embedding-3-small"
         ).data[0].embedding
 
-        D, I = faiss_index.search(np.array([query_vector]).astype("float32"), 3)
+        D, I = faiss_index.search(np.array([query_vector]).astype("float32"), 2)
 
         matched_chunks = []
         for i in I[0]:
