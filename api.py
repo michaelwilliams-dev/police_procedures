@@ -48,6 +48,7 @@ def ping():
         return '', 204
     return jsonify({"message": "pong"})
 
+# Load FAISS index
 try:
     faiss_index = faiss.read_index("faiss_index/police_chunks.index")
     with open("faiss_index/police_metadata.json", "r", encoding="utf-8") as f:
@@ -104,12 +105,35 @@ Please generate a structured response that includes:
     return generate_reviewed_response(prompt)
 
 def generate_reviewed_response(prompt):
+    print("📢 Sending initial GPT prompt...")
     completion = client.chat.completions.create(
         model="gpt-4",
         messages=[{"role": "user", "content": prompt}],
         temperature=0.3
     )
-    return completion.choices[0].message.content.strip()
+    initial_response = completion.choices[0].message.content.strip()
+
+    print("🔄 Reviewing GPT response...")
+    review_prompt = f"""
+You are an internal reviewer for UK police AI guidance.
+
+Your task:
+Please improve the following structured response, focusing on tone, clarity, and legal/procedural accuracy.
+
+The response must remain professional, concise, and aligned with UK police operational guidance and tone.
+If the answer is already clear and correct, return it unchanged.
+
+--- START RESPONSE ---
+{initial_response}
+--- END RESPONSE ---
+"""
+    review_completion = client.chat.completions.create(
+        model="gpt-4",
+        messages=[{"role": "user", "content": review_prompt}],
+        temperature=0.2
+    )
+    print("✅ Reviewed response complete.")
+    return review_completion.choices[0].message.content.strip()
 
 def send_email_mailjet(to_emails, subject, body_text, attachments=[], timestamp=None):
     MAILJET_API_KEY = os.getenv("MJ_APIKEY_PUBLIC")
@@ -144,6 +168,7 @@ def send_email_mailjet(to_emails, subject, body_text, attachments=[], timestamp=
 
     print(f"📤 Mailjet status: {response.status_code}")
     print(response.json())
+    return response.status_code, response.json()
 
 @app.route("/generate", methods=["POST"])
 def generate_response():
@@ -174,8 +199,7 @@ def generate_response():
         print("🔍 FAISS matched files:")
         for i in I[0]:
             print(" -", metadata[i]["chunk_file"])
-        print("📄 FAISS Context Preview (first 500 chars):\n")
-        print(context[:500])
+        print("📄 FAISS Context Preview:\n", context[:500])
     else:
         context = "Policy lookup not available (FAISS index not loaded)."
 
@@ -192,11 +216,9 @@ def generate_response():
 
     doc = Document()
     doc.add_heading(f"Response for {full_name}", level=1)
-    doc.add_paragraph(f"🗕️ Generated: {timestamp}")
+    doc.add_paragraph(f"📅 Generated: {timestamp}")
     doc.add_heading("AI Analysis", level=2)
     add_markdown_bold(doc.add_paragraph(), answer)
-    #doc.add_heading("Supporting Evidence", level=2)
-    #doc.add_paragraph(context)
     doc.save(doc_path)
     print(f"📄 Word saved: {doc_path}")
 
@@ -232,7 +254,6 @@ Please find attached the AI-generated analysis based on your query submitted on 
         "mailjet_response": response
     })
 
-# Run App
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
