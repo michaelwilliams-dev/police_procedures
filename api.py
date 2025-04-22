@@ -159,20 +159,44 @@ The revised response must remain professional, detailed, and aligned with UK pol
     print("✅ Reviewed response complete.")
     return review_completion.choices[0].message.content.strip()
 
-def send_email_mailjet(to_emails, subject, body_text, attachments=[], timestamp=None):
+def send_email_mailjet(to_emails, subject, body_text, attachments=[], full_name=None, supervisor_name=None):
     MAILJET_API_KEY = os.getenv("MJ_APIKEY_PUBLIC")
     MAILJET_SECRET_KEY = os.getenv("MJ_APIKEY_PRIVATE")
 
-    message = {
-        "Messages": [{
+    messages = []
+
+    for recipient in to_emails:
+        role = recipient["Name"]
+        email = recipient["Email"]
+
+        # Customise the message per role
+        if role == full_name:
+            text_body = f"""To: {full_name},
+
+Please find attached the AI-generated analysis based on your query submitted on {datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")}.
+"""
+        elif role == supervisor_name:
+            text_body = f"""To: {supervisor_name},
+
+Please review the attached report submitted by {full_name}. It contains AI-generated analysis for internal review.
+"""
+        elif role == "HR Department":
+            text_body = f"""To: HR Department,
+
+This document was generated following a query submitted by {full_name}. Please file or follow up according to internal procedures.
+"""
+        else:
+            text_body = f"Attached is an AI-generated analysis regarding {full_name}."
+
+        messages.append({
             "From": {
                 "Email": "noreply@securemaildrop.uk",
                 "Name": "Secure Maildrop"
             },
-            "To": to_emails,
+            "To": [{"Email": email, "Name": role}],
             "Subject": subject,
-            "TextPart": body_text,
-            "HTMLPart": f"<pre>{body_text}</pre>",
+            "TextPart": text_body,
+            "HTMLPart": f"<pre>{text_body}</pre>",
             "Attachments": [
                 {
                     "ContentType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -181,13 +205,12 @@ def send_email_mailjet(to_emails, subject, body_text, attachments=[], timestamp=
                 }
                 for file_path in attachments
             ]
-        }]
-    }
+        })
 
     response = requests.post(
         "https://api.mailjet.com/v3.1/send",
         auth=(MAILJET_API_KEY, MAILJET_SECRET_KEY),
-        json=message
+        json={"Messages": messages}
     )
 
     print(f"📤 Mailjet status: {response.status_code}")
@@ -287,7 +310,9 @@ Please find attached the AI-generated analysis based on your query submitted on 
         to_emails=recipients,
         subject=subject,
         body_text=body_text,
-        attachments=[doc_path]
+        attachments=[doc_path],
+        full_name=full_name,
+        supervisor_name=supervisor_name
     )
 
     return jsonify({
