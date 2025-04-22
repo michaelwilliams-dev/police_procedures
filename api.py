@@ -205,6 +205,14 @@ def generate_response():
                 matched_chunks.append(f.read().strip())
 
         context = "\n\n---\n\n".join(matched_chunks)
+        # 🔒 Redact sensitive info (force names + badge numbers) before sending to GPT
+        sensitive_names = ["Wiltshire Police", "Humberside Police", "Avon and Somerset Police"]
+        for name in sensitive_names:
+            context = context.replace(name, "the relevant police force")
+
+        # 🛂 Redact common badge number formats (e.g. PC1234, SGT567, CID001)
+        import re
+        context = re.sub(r'\b(PC|SGT|CID)?\d{3,5}\b', '[badge number]', context, flags=re.IGNORECASE)
         print("🔍 FAISS matched files:")
         for i in I[0]:
             print(" -", metadata[i]["chunk_file"])
@@ -225,7 +233,7 @@ def generate_response():
 
     doc = Document()
     doc.add_heading(f"Response for {full_name}", level=1)
-    doc.add_paragraph(f"📅 Generated: {timestamp}")
+    doc.add_paragraph(f"Generated: {timestamp}")
     doc.add_heading("AI Analysis", level=2)
     add_markdown_bold(doc.add_paragraph(), answer)
     doc.save(doc_path)
