@@ -383,7 +383,7 @@ for title in structured:
         text_run.font.size = Pt(11)
         text_run.font.color.rgb = RGBColor(0, 0, 0)
 
-# ✅ Footer disclaimer
+# ✅ Footer disclaimer (outside loop)
 footer_divider = doc.add_paragraph()
 footer_run = footer_divider.add_run("────────────────────────────────────────────")
 footer_run.font.name = 'Arial'
