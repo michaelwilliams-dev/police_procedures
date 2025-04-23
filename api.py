@@ -327,9 +327,13 @@ def generate_response():
             structured[current_title] = content
 
     # ✅ Add structured sections to the Word document
+    rename = {
+        "Enquirer Reply": "Initial Response"
+    }
+
     for title in ["Enquirer Reply", "Action Sheet", "Policy Notes"]:
         if title in structured:
-            doc.add_heading(title, level=2)
+            doc.add_heading(rename.get(title, title).upper(), level=2)
 
             if title == "Action Sheet":
                 bullets = re.split(r'[-•–]\s+', structured[title])
