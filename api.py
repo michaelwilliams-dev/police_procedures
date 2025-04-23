@@ -176,7 +176,7 @@ def send_email_mailjet(to_emails, subject, body_text, attachments=[], full_name=
         if role == full_name:
             text_body = f"""To: {full_name},
 
-Please find attached the AI-generated analysis based on your query submitted on {datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")}.
+Please find attached the AI-generated analysis based on your query submitted on {datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")}.
 """
         elif role == supervisor_name:
             text_body = f"""To: {supervisor_name},
