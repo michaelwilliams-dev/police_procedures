@@ -99,7 +99,7 @@ All responses must:
 ### Your Task:
 Please generate a structured response that includes:
 
-#1. **Enquirer Reply** – in plain English, appropriate for the rank level.
+1. **Enquirer Reply** – in plain English, appropriate for the rank level.
 2. **Action Sheet** – bullet-point steps the enquirer should follow.
 3. **Policy Notes** – cite any relevant UK policing policies, SOPs, or legal codes.
 """
@@ -318,8 +318,12 @@ def generate_response():
 
         elif i % 2 == 0 and current_title:
             if current_title.lower() == "enquirer reply":
-                content = re.sub(r'^\s*Enquirer Reply\s*', '', content, flags=re.IGNORECASE)
-                content = re.sub(r'^\s*Hello,\s*', '', content, flags=re.IGNORECASE)
+                lines = content.splitlines()
+                cleaned_lines = [
+                    line for line in lines
+                    if not re.match(r'^\s*(enquirer reply|hello,?)\s*$', line, flags=re.IGNORECASE)
+                ]
+                content = "\n".join(cleaned_lines).strip()
             structured[current_title] = content
 
     # ✅ Add structured sections to the Word document
