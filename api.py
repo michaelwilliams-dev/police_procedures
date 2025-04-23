@@ -426,11 +426,16 @@ def generate_response():
         heading_run.font.color.rgb = RGBColor(0, 0, 0)
 
         if title == "Action Sheet":
-            steps = re.split(r'^\s*\d+[.)]?\s+', structured[title], flags=re.MULTILINE)
-            for step in steps:
-                clean = re.sub(r'^\d+[.)]?\s*', '', step).strip()
+            # Clean and reformat steps by line (one per bullet or number)
+            lines = structured[title].splitlines()
+            for line in lines:
+                clean = line.strip()
+                # Remove leading numbers, bullets, dashes etc.
+                clean = re.sub(r'^[-•–]?\s*\d+[.)]?\s*', '', clean)
+                clean = re.sub(r'^[-•–]\s*', '', clean)
                 if clean:
-                    doc.add_paragraph(clean, style='List Number')
+                    para = doc.add_paragraph(clean, style='List Number')
+                    para.paragraph_format.left_indent = Mm(5)  # Optional: small indent
         else:
             cleaned_text = re.sub(r'\*\*(.*?)\*\*', r'\1', structured[title])
             para = doc.add_paragraph()
