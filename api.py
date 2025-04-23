@@ -222,8 +222,13 @@ This document was generated following a query submitted by {full_name}. Please f
 
 @app.route("/generate", methods=["POST"])
 def generate_response():
-    data = request.get_json()
     print("📥 /generate route hit")
+    try:
+        data = request.get_json()
+        print("🔎 Payload received:", data)
+    except Exception as e:
+        print("❌ Error parsing JSON:", e)
+        return jsonify({"error": "Invalid JSON input"}), 400
 
     query_text = data.get("query")
     full_name = data.get("full_name", "User")
