@@ -267,9 +267,13 @@ def generate_response():
 
     answer = ask_gpt_with_context(data, context)
 
-    # ✅ Remove repeated 'ORIGINAL QUERY' blocks (even markdown or plain text)
-    answer = re.sub(r"(###\s*ORIGINAL QUERY|[*_]{2,3}ORIGINAL QUERY[*_]{2,3}|ORIGINAL QUERY\s*:?)\s*[\r\n]+.*?(?=###|INITIAL RESPONSE|ENQUIRER REPLY|\Z)", "", answer, flags=re.IGNORECASE | re.DOTALL).strip()
-    
+    # ✅ Remove repeated '### ORIGINAL QUERY' section if GPT included it
+    # answer = re.sub(r"### ORIGINAL QUERY\s*[\r\n]+.*?(?=###|\Z)", "", answer, flags=re.IGNORECASE | re.DOTALL).strip()
+    answer = re.sub(r"(#+\s*original query\s*[\r\n]+.*?)(?=\n#+\s*|\Z)", "", answer, flags=re.IGNORECASE | re.DOTALL).strip()
+    if not answer:
+        print("❌ GPT returned None.")
+        return jsonify({"error": "GPT failed to generate a response."}), 500
+
     print(f"🧠 GPT answer: {answer[:80]}...")
 
     discipline = data.get("discipline", "Not specified")
@@ -403,9 +407,8 @@ def generate_response():
                 if clean:
                     doc.add_paragraph(clean, style='List Number')
         else:
-            cleaned_text = re.sub(r'\*\*(.*?)\*\*', r'\1', structured[title])
             para = doc.add_paragraph()
-            run = para.add_run(cleaned_text)
+            run = para.add_run(structured[title])
             run.font.name = 'Arial'
             run.font.size = Pt(11)
             run.font.color.rgb = RGBColor(0, 0, 0)
