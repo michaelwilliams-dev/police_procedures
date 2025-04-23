@@ -425,16 +425,15 @@ def generate_response():
         heading_run.font.size = Pt(12)
         heading_run.font.color.rgb = RGBColor(0, 0, 0)
 
-        if title == "Action Sheet":
-            #Clean and format policy points as numbered list
-            lines = structured[title].splitlines()
-            for line in lines:
-                clean = line.strip()
-                clean = re.sub(r'^[-•–]?\s*\d+[.)]?\s*', '', clean)  # Remove leading numbers/symbols
-                clean = re.sub(r'^[-•–]\s*', '', clean)  # Remove bullets/dashes
-                if clean:
-                     para = doc.add_paragraph(clean, style='List Number')
-                     para.paragraph_format.left_indent = Mm(5)  
+        if title in ["Action Sheet", "Policy Notes"]:
+           lines = structured[title].splitlines()
+           for line in lines:
+              clean = line.strip()
+              clean = re.sub(r'^[-•–]?\s*\d+[.)]?\s*', '', clean)
+              clean = re.sub(r'^[-•–]\s*', '', clean)
+              if clean:
+                  para = doc.add_paragraph(clean, style='List Number')
+                  para.paragraph_format.left_indent = Mm(5) 
         else:
             # Default fallback for all other sections
             cleaned_text = re.sub(r'\*\*(.*?)\*\*', r'\1', structured[title])
