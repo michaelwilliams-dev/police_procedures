@@ -268,8 +268,8 @@ def generate_response():
     answer = ask_gpt_with_context(data, context)
 
     # ✅ Remove repeated '### ORIGINAL QUERY' section if GPT included it
-    answer = re.sub(r"### ORIGINAL QUERY\s*[\r\n]+.*?(?=###|\Z)", "", answer, flags=re.IGNORECASE | re.DOTALL).strip()
-
+    # answer = re.sub(r"### ORIGINAL QUERY\s*[\r\n]+.*?(?=###|\Z)", "", answer, flags=re.IGNORECASE | re.DOTALL).strip()
+    answer = re.sub(r"(#+\s*original query\s*[\r\n]+.*?)(?=\n#+\s*|\Z)", "", answer, flags=re.IGNORECASE | re.DOTALL).strip()
     if not answer:
         print("❌ GPT returned None.")
         return jsonify({"error": "GPT failed to generate a response."}), 500
