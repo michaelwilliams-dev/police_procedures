@@ -11,7 +11,9 @@ from openai import OpenAI
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from docx import Document
-from docx.shared import Mm, Pt, RGBColor 
+from docx.shared import Mm, Pt, RGBColor
+from datetime import datetime
+from zoneinfo import ZoneInfo  # Python 3.9+ 
 
 __version__ = "v1.0.7-test"
 print(f"🚀 API Version: {__version__}")
@@ -133,18 +135,19 @@ def generate_reviewed_response(prompt):
 
     stripped_response = initial_response.split("### Context from FAISS Index:")[0].strip()
 
-    review_prompt = f"""
+review_prompt = f"""
 You are an internal reviewer for UK police AI guidance.
 
 Your task:
-Please improve the following structured response, focusing on:
+Please improve the following structured response with the following goals:
 
-- Clarity and accuracy
-- Tone and readability
-- Procedural and legal relevance
-- And expand on any areas where further explanation, action steps, or justification would be useful to the reader
+- Ensure operational clarity and legal accuracy
+- Maintain a direct, professional tone suitable for internal reports and formal use
+- Remove unnecessary empathy or soft greetings (e.g., “I understand”, “Thanks for your message”)
+- Expand on any steps where further operational instruction or legal justification would be useful
+- Ensure compliance with UK police powers, PACE, SOPs, and professional standards
 
-The revised response must remain professional, detailed, and aligned with UK police operational guidance.
+The revised response must remain factual, proportionate, and aligned with UK police operational expectations and tone.
 
 --- START RESPONSE ---
 {stripped_response}
@@ -285,10 +288,16 @@ def generate_response():
     section.page_width = Mm(210)
 
     # ✅ Add formal header
-    doc.add_heading(f"Response for {full_name}", level=1)
+    title_para = doc.add_paragraph()
+    title_run = title_para.add_run(f"RESPONSE FOR {full_name.upper()}")
+    title_run.bold = True
+    title_run.font.name = 'Arial'
+    title_run.font.size = Pt(14)
+    title_run.font.color.rgb = RGBColor(0, 0, 0)
 
     # ✅ Use readable UK-style date and time
-    generated_datetime = datetime.datetime.utcnow().strftime("%d %B %Y at %H:%M:%S (UTC)")
+    uk_time = datetime.now(ZoneInfo("Europe/London"))
+    generated_datetime = uk_time.strftime("%d %B %Y at %H:%M:%S (%Z)")
     doc.add_paragraph(f"Generated: {generated_datetime}")
 
     # ✅ Bold header
@@ -304,7 +313,11 @@ def generate_response():
     doc.add_paragraph(query_text.strip())
 
     # ✅ Divider
-    doc.add_paragraph("────────────────────────────────────────────")
+    divider = doc.add_paragraph()
+    divider_run = divider.add_run("────────────────────────────────────────────")
+    divider_run.font.name = 'Arial'
+    divider_run.font.size = Pt(10)
+    divider_run.font.color.rgb = RGBColor(0, 0, 0)
     
     # ✅ Clean and structure GPT output by section
     import re
@@ -333,87 +346,97 @@ def generate_response():
                ]
                content = "\n".join(cleaned_lines).strip()
             structured[current_title] = content
-    # ✅ Fallback if GPT doesn't return structured content
-    if not structured:
-        print("⚠️ GPT returned unstructured content. Using entire answer as 'Initial Response'.")
-    
-        lines = answer.strip().splitlines()
-        cleaned_lines = [
-            line for line in lines
-            if not re.match(r'^\s*(enquirer reply|hello,?)\s*$', line, flags=re.IGNORECASE)
-        ]
-        structured["Initial Response"] = "\n".join(cleaned_lines).strip()
-    
-    # ✅ Add structured sections to the Word document
-    rename = {
-        "Enquirer Reply": "Initial Response"
-    }
 
-    for title in structured:
-        heading = doc.add_paragraph()
-        heading_run = heading.add_run(rename.get(title, title).upper())
-        heading_run.bold = True
-        heading_run.font.name = 'Arial'
-        heading_run.font.size = Pt(12)
-        heading_run.font.color.rgb = RGBColor(0, 0, 0)
+# ✅ Fallback if GPT doesn't return structured content
+if not structured:
+    print("⚠️ GPT returned unstructured content. Using entire answer as 'Initial Response'.")
+    lines = answer.strip().splitlines()
+    cleaned_lines = [
+        line for line in lines
+        if not re.match(r'^\s*(enquirer reply|hello,?)\s*$', line, flags=re.IGNORECASE)
+    ]
+    structured["Initial Response"] = "\n".join(cleaned_lines).strip()
 
-        if title == "Action Sheet":
-            steps = re.split(r'^\s*\d+[.)]?\s+', structured[title], flags=re.MULTILINE)
-            for step in steps:
-                clean = re.sub(r'^\d+[.)]?\s*', '', step).strip()
-                if clean:
-                    doc.add_paragraph(clean, style='List Number')
-        else:
-            para = doc.add_paragraph()
-            text_run = para.add_run(structured[title])
-            text_run.font.name = 'Arial'
-            text_run.font.size = Pt(11)
-            text_run.font.color.rgb = RGBColor(0, 0, 0)
+# ✅ Add structured sections to the Word document
+rename = {
+    "Enquirer Reply": "Initial Response"
+}
 
- # ✅ Footer disclaimer
-doc.add_paragraph("────────────────────────────────────────────")
+for title in structured:
+    heading = doc.add_paragraph()
+    heading_run = heading.add_run(rename.get(title, title).upper())
+    heading_run.bold = True
+    heading_run.font.name = 'Arial'
+    heading_run.font.size = Pt(12)
+    heading_run.font.color.rgb = RGBColor(0, 0, 0)
+
+    if title == "Action Sheet":
+        steps = re.split(r'^\s*\d+[.)]?\s+', structured[title], flags=re.MULTILINE)
+        for step in steps:
+            clean = re.sub(r'^\d+[.)]?\s*', '', step).strip()
+            if clean:
+                doc.add_paragraph(clean, style='List Number')
+    else:
+        para = doc.add_paragraph()
+        text_run = para.add_run(structured[title])
+        text_run.font.name = 'Arial'
+        text_run.font.size = Pt(11)
+        text_run.font.color.rgb = RGBColor(0, 0, 0)
+
+# ✅ Footer disclaimer
+footer_divider = doc.add_paragraph()
+footer_run = footer_divider.add_run("────────────────────────────────────────────")
+footer_run.font.name = 'Arial'
+footer_run.font.size = Pt(10)
+footer_run.font.color.rgb = RGBColor(0, 0, 0)
+
 doc.add_paragraph("This document was generated by AIVS Software Limited using AI assistance (OpenAI). Please review for accuracy and relevance before taking any formal action.")
 doc.add_paragraph("© AIVS Software Limited 2025. All rights reserved.")
 
-    # ✅ Save to path
-    doc.save(doc_path)
-    print(f"📄 Word saved: {doc_path}")
+footer_time = datetime.now(ZoneInfo("Europe/London"))
+footer_stamp = footer_time.strftime("Report generated on %d %B %Y at %H:%M:%S (%Z)")
+doc.add_paragraph(footer_stamp)
 
-    recipients = []
-    if user_email:
-        recipients.append({"Email": user_email, "Name": full_name})
-    if supervisor_email:
-        recipients.append({"Email": supervisor_email, "Name": supervisor_name})
-    if hr_email:
-        recipients.append({"Email": hr_email, "Name": "HR Department"})
+# ✅ Save to path
+doc.save(doc_path)
+print(f"📄 Word saved: {doc_path}")
 
-    if not recipients:
-        return jsonify({"error": "No valid email addresses provided."}), 400
+recipients = []
+if user_email:
+    recipients.append({"Email": user_email, "Name": full_name})
+if supervisor_email:
+    recipients.append({"Email": supervisor_email, "Name": supervisor_name})
+if hr_email:
+    recipients.append({"Email": hr_email, "Name": "HR Department"})
 
-    subject = f"AI Analysis for {full_name} - {timestamp}"
-    body_text = f"""To: {full_name},
+if not recipients:
+    return jsonify({"error": "No valid email addresses provided."}), 400
+
+subject = f"AI Analysis for {full_name} - {timestamp}"
+body_text = f"""To: {full_name},
 
 Please find attached the AI-generated analysis based on your query submitted on {timestamp}.
 """
 
-    status, response = send_email_mailjet(
-        to_emails=recipients,
-        subject=subject,
-        body_text=body_text,
-        attachments=[doc_path],
-        full_name=full_name,
-        supervisor_name=supervisor_name
-    )
+status, response = send_email_mailjet(
+    to_emails=recipients,
+    subject=subject,
+    body_text=body_text,
+    attachments=[doc_path],
+    full_name=full_name,
+    supervisor_name=supervisor_name
+)
 
-    return jsonify({
-        "status": "ok",
-        "message": "✅ OpenAI-powered response generated, AI reviewed and email successfully sent.",
-        "disclaimer": "This document was generated by AIVS Software Limited using AI assistance (OpenAI). Please review for accuracy and relevance before taking any formal action.",
-        "copyright": "© AIVS Software Limited 2025. All rights reserved.",
-        "context_preview": context[:200],
-        "mailjet_status": status,
-        "mailjet_response": response
-    })
+return jsonify({
+    "status": "ok",
+    "message": "✅ OpenAI-powered response generated, AI reviewed and email successfully sent.",
+    "disclaimer": "This document was generated by AIVS Software Limited using AI assistance (OpenAI). Please review for accuracy and relevance before taking any formal action.",
+    "copyright": "© AIVS Software Limited 2025. All rights reserved.",
+    "context_preview": context[:200],
+    "mailjet_status": status,
+    "mailjet_response": response
+})
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
