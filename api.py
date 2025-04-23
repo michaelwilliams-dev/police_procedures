@@ -135,7 +135,7 @@ def generate_reviewed_response(prompt):
 
     stripped_response = initial_response.split("### Context from FAISS Index:")[0].strip()
 
-review_prompt = f"""
+    review_prompt = f"""
 You are an internal reviewer for UK police AI guidance.
 
 Your task:
