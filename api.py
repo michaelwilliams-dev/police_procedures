@@ -325,24 +325,27 @@ def generate_response():
                 ]
                 content = "\n".join(cleaned_lines).strip()
             structured[current_title] = content
-
+    # ✅ Fallback if GPT doesn't return structured content
+    if not structured:
+        print("⚠️ GPT returned unstructured content. Using entire answer as 'Initial Response'.")
+        structured["Initial Response"] = answer.strip()
+    
     # ✅ Add structured sections to the Word document
     rename = {
         "Enquirer Reply": "Initial Response"
     }
 
-    for title in ["Enquirer Reply", "Action Sheet", "Policy Notes"]:
-        if title in structured:
-            doc.add_heading(rename.get(title, title).upper(), level=2)
+    for title in structured:
+        doc.add_heading(rename.get(title, title).upper(), level=2)
 
-            if title == "Action Sheet":
-                bullets = re.split(r'[-•–]\s+', structured[title])
-                for bullet in bullets:
-                    clean = bullet.strip()
-                    if clean:
-                        doc.add_paragraph(clean, style='List Bullet')
-            else:
-                add_markdown_bold(doc.add_paragraph(), structured[title])
+        if title == "Action Sheet":
+            bullets = re.split(r'[-•–]\s+', structured[title])
+            for bullet in bullets:
+                clean = bullet.strip()
+                if clean:
+                    doc.add_paragraph(clean, style='List Bullet')
+        else:
+            add_markdown_bold(doc.add_paragraph(), structured[title])
 
     # ✅ Footer disclaimer
     doc.add_paragraph("\n---")
