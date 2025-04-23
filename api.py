@@ -292,9 +292,12 @@ def generate_response():
     doc.add_paragraph(f"Generated: {generated_date}")
 
     # ✅ Framing paragraph
-    doc.add_paragraph("AI Enquiry Reply")
-    doc.add_paragraph("This report was prepared using AI analysis based on the submitted query.")
+    para1 = doc.add_paragraph()
+    para1.add_run("AI RESPONSE").bold = True
 
+    para2 = doc.add_paragraph()
+    para2.add_run("Note:This report was prepared using AI analysis based on the submitted query.").bold = True
+    
     # ✅ Divider
     doc.add_paragraph("---")
 
@@ -345,11 +348,11 @@ def generate_response():
         doc.add_heading(rename.get(title, title).upper(), level=2)
 
         if title == "Action Sheet":
-            bullets = re.split(r'[-•–]\s+', structured[title])
-            for bullet in bullets:
-                clean = bullet.strip()
-                if clean:
-                    doc.add_paragraph(clean, style='List Bullet')
+            steps = re.split(r'^\s*\d+[.)]?\s+', structured[title], flags=re.MULTILINE)
+            for step in steps:
+               clean = re.sub(r'^\d+[.)]?\s*', '', step).strip()
+               if clean:
+                   doc.add_paragraph(clean, style='List Number')
         else:
             add_markdown_bold(doc.add_paragraph(), structured[title])
 
