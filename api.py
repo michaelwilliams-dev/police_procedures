@@ -434,6 +434,16 @@ def generate_response():
               if clean:
                   para = doc.add_paragraph(clean, style='List Number')
                   para.paragraph_format.left_indent = Mm(5) 
+
+         #elif title == "Policy Notes":
+            #lines = structured[title].splitlines()
+            #for line in lines:
+               #clean = line.strip()
+               #clean = re.sub(r'^[-•–]?\s*\d+[.)]?\s*', '', clean)
+               #clean = re.sub(r'^[-•–]\s*', '', clean)
+               #if clean:
+                   #para = doc.add_paragraph(clean, style='List Number')
+                   #para.paragraph_format.left_indent = Mm(5)         
         else:
             # Default fallback for all other sections
             cleaned_text = re.sub(r'\*\*(.*?)\*\*', r'\1', structured[title])
