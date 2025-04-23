@@ -15,6 +15,7 @@ from docx.shared import Mm, Pt, RGBColor
 from datetime import datetime
 from zoneinfo import ZoneInfo  # Python 3.9+ 
 
+
 __version__ = "v1.0.7-test"
 print(f"🚀 API Version: {__version__}")
 
@@ -278,7 +279,13 @@ def generate_response():
     os.makedirs(output_path, exist_ok=True)
 
     doc_path = f"{output_path}/{full_name.replace(' ', '_')}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.docx"
+    
     doc = Document()
+
+    # ✅ Apply default document style
+    doc.styles['Normal'].font.name = 'Arial'
+    doc.styles['Normal'].font.size = Pt(11)
+    doc.styles['Normal'].font.color.rgb = RGBColor(0, 0, 0)
 
     # Document styling
     section = doc.sections[0]
@@ -291,10 +298,41 @@ def generate_response():
     title_run.font.name = 'Arial'
     title_run.font.size = Pt(14)
     title_run.font.color.rgb = RGBColor(0, 0, 0)
-
+    
+    # ✅ UK-style timestamp
     uk_time = datetime.now(ZoneInfo("Europe/London"))
     generated_datetime = uk_time.strftime("%d %B %Y at %H:%M:%S (%Z)")
     doc.add_paragraph(f"Generated: {generated_datetime}")
+
+    # 🔹 ORIGINAL QUERY heading
+    para_query_heading = doc.add_paragraph()
+    run_heading = para_query_heading.add_run("ORIGINAL QUERY")
+    run_heading.bold = True
+    run_heading.font.name = 'Arial'
+    run_heading.font.size = Pt(11)
+    run_heading.font.color.rgb = RGBColor(0, 0, 0)
+
+    # 🔹 Divider ABOVE the query text
+    divider_above = doc.add_paragraph()
+    divider_above_run = divider_above.add_run("────────────────────────────────────────────")
+    divider_above_run.font.name = 'Arial'
+    divider_above_run.font.size = Pt(10)
+    divider_above_run.font.color.rgb = RGBColor(0, 0, 0)
+
+    # 🔹 Italicised query
+    para_query_text = doc.add_paragraph()
+    run_query = para_query_text.add_run(f'"{query_text.strip()}"')
+    run_query.italic = True
+    run_query.font.name = 'Arial'
+    run_query.font.size = Pt(11)
+    run_query.font.color.rgb = RGBColor(0, 0, 0)
+
+    # 🔹 Divider BELOW the query text
+    divider_below = doc.add_paragraph()
+    divider_below_run = divider_below.add_run("────────────────────────────────────────────")
+    divider_below_run.font.name = 'Arial'
+    divider_below_run.font.size = Pt(10)
+    divider_below_run.font.color.rgb = RGBColor(0, 0, 0)
 
     # ✅ Bold header: "AI RESPONSE"
     para1 = doc.add_paragraph()
