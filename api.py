@@ -267,8 +267,8 @@ def generate_response():
 
     answer = ask_gpt_with_context(data, context)
 
-    # ✅ Remove repeated '### ORIGINAL QUERY' section if GPT included it
-    answer = re.sub(r"### ORIGINAL QUERY\s*[\r\n]+.*?(?=###|\Z)", "", answer, flags=re.IGNORECASE | re.DOTALL).strip()
+    # ✅ Remove repeated 'ORIGINAL QUERY' blocks (even markdown or plain text)
+    answer = re.sub(r"(###\s*ORIGINAL QUERY|[*_]{2,3}ORIGINAL QUERY[*_]{2,3}|ORIGINAL QUERY\s*:?)\s*[\r\n]+.*?(?=###|INITIAL RESPONSE|ENQUIRER REPLY|\Z)", "", answer, flags=re.IGNORECASE | re.DOTALL).strip()
     
     print(f"🧠 GPT answer: {answer[:80]}...")
 
