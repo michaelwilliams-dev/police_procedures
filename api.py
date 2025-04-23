@@ -288,15 +288,14 @@ def generate_response():
     doc.add_heading(f"Response for {full_name}", level=1)
 
     # ✅ Use readable UK-style date
-    generated_date = datetime.datetime.utcnow().strftime("%d %B %Y")
-    doc.add_paragraph(f"Generated: {generated_date}")
-
+    generated_datetime = datetime.datetime.utcnow().strftime("%d %B %Y at %H:%M:%S (UTC)")
+    doc.add_paragraph(f"Generated: {generated_datetime}")
     # ✅ Framing paragraph
     para1 = doc.add_paragraph()
     para1.add_run("AI RESPONSE").bold = True
 
     para2 = doc.add_paragraph()
-    para2.add_run("Note:This report was prepared using AI analysis based on the submitted query.").bold = True
+    para2.add_run("Note: This report was prepared using AI analysis based on the submitted query.").bold = True
     
     # ✅ Divider
     doc.add_paragraph("---")
