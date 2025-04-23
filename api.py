@@ -317,18 +317,24 @@ def generate_response():
             current_title = content
 
         elif i % 2 == 0 and current_title:
-            if current_title.lower() == "enquirer reply":
-                lines = content.splitlines()
-                cleaned_lines = [
-                    line for line in lines
-                    if not re.match(r'^\s*(enquirer reply|hello,?)\s*$', line, flags=re.IGNORECASE)
-                ]
-                content = "\n".join(cleaned_lines).strip()
+            if current_title.lower() in ["enquirer reply", "initial response"]:
+               lines = content.splitlines()
+               cleaned_lines = [
+                   line for line in lines
+                   if not re.match(r'^\s*(enquirer reply|hello,?)\s*$', line, flags=re.IGNORECASE)
+               ]
+               content = "\n".join(cleaned_lines).strip()
             structured[current_title] = content
     # ✅ Fallback if GPT doesn't return structured content
     if not structured:
         print("⚠️ GPT returned unstructured content. Using entire answer as 'Initial Response'.")
-        structured["Initial Response"] = answer.strip()
+    
+        lines = answer.strip().splitlines()
+        cleaned_lines = [
+            line for line in lines
+            if not re.match(r'^\s*(enquirer reply|hello,?)\s*$', line, flags=re.IGNORECASE)
+        ]
+        structured["Initial Response"] = "\n".join(cleaned_lines).strip()
     
     # ✅ Add structured sections to the Word document
     rename = {
