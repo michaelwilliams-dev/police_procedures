@@ -296,10 +296,31 @@ def generate_response():
     generated_datetime = uk_time.strftime("%d %B %Y at %H:%M:%S (%Z)")
     doc.add_paragraph(f"Generated: {generated_datetime}")
 
-    doc.add_paragraph().add_run("AI RESPONSE").bold = True
-    doc.add_paragraph().add_run("Note: This report was prepared using AI analysis based on the submitted query.").bold = True
+    # ✅ Bold header: "AI RESPONSE"
+    para1 = doc.add_paragraph()
+    run1 = para1.add_run("AI RESPONSE")
+    run1.bold = True
+    run1.font.name = 'Arial'
+    run1.font.size = Pt(11)
+    run1.font.color.rgb = RGBColor(0, 0, 0)
 
-    doc.add_paragraph().add_run("ORIGINAL QUERY:\n").bold = True
+    # ✅ Subheader: "Note: ..."
+    para2 = doc.add_paragraph()
+    run2 = para2.add_run("Note: This report was prepared using AI analysis based on the submitted query.")
+    run2.bold = True
+    run2.font.name = 'Arial'
+    run2.font.size = Pt(11)
+    run2.font.color.rgb = RGBColor(0, 0, 0)
+
+    # ✅ ORIGINAL QUERY label
+    para3 = doc.add_paragraph()
+    run3 = para3.add_run("ORIGINAL QUERY:\n")
+    run3.bold = True
+    run3.font.name = 'Arial'
+    run3.font.size = Pt(11)
+    run3.font.color.rgb = RGBColor(0, 0, 0)
+
+    # ✅ Actual query content
     doc.add_paragraph(query_text.strip())
 
     divider = doc.add_paragraph()
