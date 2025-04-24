@@ -113,7 +113,7 @@ def generate_reviewed_response(prompt):
     completion = client.chat.completions.create(
         model="gpt-4",
         messages=[{"role": "user", "content": prompt}],
-        temperature=0.3
+        temperature=0
     )
     initial_response = completion.choices[0].message.content.strip()
 
@@ -158,7 +158,7 @@ The revised response must remain factual, proportionate, and aligned with UK pol
     review_completion = client.chat.completions.create(
         model="gpt-4",
         messages=[{"role": "user", "content": review_prompt}],
-        temperature=0.2
+        temperature=0
     )
     print("✅ Reviewed response complete.")
     return review_completion.choices[0].message.content.strip()
