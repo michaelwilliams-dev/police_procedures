@@ -373,12 +373,12 @@ def generate_response():
      #divider_above_run.font.color.rgb = RGBColor(0, 0, 0)
 
     # 🔹 Italicised query
-    para_query_text = doc.add_paragraph()
-    run_query = para_query_text.add_run(f'"{query_text.strip()}"')
-    run_query.italic = True
-    run_query.font.name = 'Arial'
-    run_query.font.size = Pt(11)
-    run_query.font.color.rgb = RGBColor(0, 0, 0)
+    #para_query_text = doc.add_paragraph()
+    #run_query = para_query_text.add_run(f'"{query_text.strip()}"')
+    #run_query.italic = True
+    #run_query.font.name = 'Arial'
+    #run_query.font.size = Pt(11)
+    #run_query.font.color.rgb = RGBColor(0, 0, 0)
 
     # 🔹 Divider BELOW the query text
     divider_below = doc.add_paragraph()
