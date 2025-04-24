@@ -389,8 +389,8 @@ def generate_response():
     # ✅ Actual query content
     #doc.add_paragraph(query_text.strip())
 
-    divider = doc.add_paragraph()
-    divider.add_run("────────────────────────────────────────────").font.size = Pt(10)
+    #divider = doc.add_paragraph()
+    #divider.add_run("────────────────────────────────────────────").font.size = Pt(10)
 
     # Split answer into structured sections
     sections = re.split(r'^### (.*?)\n', answer, flags=re.MULTILINE)
