@@ -387,7 +387,7 @@ def generate_response():
     divider_below_run.font.size = Pt(10)
     divider_below_run.font.color.rgb = RGBColor(0, 0, 0)
     # ✅ Actual query content
-    doc.add_paragraph(query_text.strip())
+    #doc.add_paragraph(query_text.strip())
 
     divider = doc.add_paragraph()
     divider.add_run("────────────────────────────────────────────").font.size = Pt(10)
