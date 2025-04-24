@@ -271,7 +271,7 @@ def generate_response():
     answer = re.sub(r"### ORIGINAL QUERY\s*[\r\n]+.*?(?=###|\Z)", "", answer, flags=re.IGNORECASE | re.DOTALL).strip()
     
     print(f"🧠 GPT answer: {answer[:80]}...")
-
+    
     discipline = data.get("discipline", "Not specified")
     discipline_folder = discipline.lower().replace(" ", "_")
     output_path = f"output/{discipline_folder}"
@@ -411,6 +411,8 @@ def generate_response():
                 cleaned_lines = [line for line in lines if not re.match(r'^\s*(enquirer reply|hello,?)\s*$', line, flags=re.IGNORECASE)]
                 content = "\n".join(cleaned_lines).strip()
             structured[current_title] = content
+            # ✅ Added debug line here 16 38
+            print("🔍 Structured keys:", list(structured.keys()))
 
     if not structured:
         print("⚠️ GPT returned unstructured content. Using entire answer as 'Initial Response'.")
