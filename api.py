@@ -356,21 +356,21 @@ def generate_response():
     # ✅ ORIGINAL QUERY labelrun3.font.name = 'Arial'
     # ✅ ORIGINAL QUERY labelrun3.font.size = Pt(11)
     # ✅ ORIGINAL QUERY labelrun3.font.color.rgb = RGBColor(0, 0, 0)
-
+ #
     # 🔹 ORIGINAL QUERY heading
-    para_query_heading = doc.add_paragraph()
-    run_heading = para_query_heading.add_run("ORIGINAL QUERY")
-    run_heading.bold = True
-    run_heading.font.name = 'Arial'
-    run_heading.font.size = Pt(11)
-    run_heading.font.color.rgb = RGBColor(0, 0, 0)
+    #para_query_heading = doc.add_paragraph()
+    #run_heading = para_query_heading.add_run("ORIGINAL QUERY")
+    #run_heading.bold = True
+    #run_heading.font.name = 'Arial'
+    #run_heading.font.size = Pt(11)
+    #run_heading.font.color.rgb = RGBColor(0, 0, 0)
 
     # 🔹 Divider ABOVE the query text
-    divider_above = doc.add_paragraph()
-    divider_above_run = divider_above.add_run("────────────────────────────────────────────")
-    divider_above_run.font.name = 'Arial'
-    divider_above_run.font.size = Pt(10)
-    divider_above_run.font.color.rgb = RGBColor(0, 0, 0)
+    # divider_above = doc.add_paragraph()
+     #divider_above_run = divider_above.add_run("────────────────────────────────────────────")
+     #divider_above_run.font.name = 'Arial'
+     #divider_above_run.font.size = Pt(10)
+     #divider_above_run.font.color.rgb = RGBColor(0, 0, 0)
 
     # 🔹 Italicised query
     para_query_text = doc.add_paragraph()
