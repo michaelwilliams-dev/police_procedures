@@ -170,7 +170,8 @@ def generate_reviewed_response(prompt):
     print("🔄 Reviewing GPT response...")
 
     stripped_response = initial_response.split("### Context from FAISS Index:")[0].strip()
-
+    #added 251725
+    stripped_response = stripped_response[:3000]  # 🔒 Limit to 3,000 characters for Render stability
     review_prompt = f"""
 
 
