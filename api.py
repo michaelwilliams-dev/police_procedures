@@ -179,20 +179,21 @@ def generate_reviewed_response(prompt):
 
     # 🧠 Build review prompt using textwrap.dedent
     review_prompt = textwrap.dedent(f"""\
-        Please improve the following structured response with the following goals:
+       Rewrite the following report as an urgent operational police action briefing, suitable for deployment teams. 
 
-        - Ensure operational clarity and legal accuracy
-        - Maintain a direct, professional tone suitable for internal reports and formal use
-        - Remove unnecessary empathy or soft greetings (e.g., “I understand”, “Thanks for your message”)
-        - Expand on any steps where further operational instruction or legal justification would be useful
-        - Ensure compliance with UK police powers, PACE, SOPs, and professional standards
+       Use direct, command-style language. Avoid soft language ("thank you", "please", "ensure") and focus on clear tactical orders ("Establish", "Detain", "Secure", "Arrest", "Preserve evidence").
 
-        The revised response must remain factual, proportionate, and aligned with UK police operational expectations and tone.
+       Structure the briefing into:
+       - **Incident Summary**
+       - **Immediate Action Orders**
+       - **Officer Safety Considerations**
+       - **Legal Grounds (with references)**
 
-        --- START RESPONSE ---
-        {stripped_response}
-        --- END RESPONSE ---
-    """)
+
+       --- START RESPONSE ---
+       {stripped_response}
+       --- END RESPONSE ---
+       """)
 
     # 🚀 Request GPT review with tight limits
     review_completion = client.chat.completions.create(
