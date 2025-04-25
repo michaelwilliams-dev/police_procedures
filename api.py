@@ -2,7 +2,7 @@
 ===============================================================
  AIVS API — Strategic Management RAG Engine
 ===============================================================
- Version: 1.4.0
+ Version: 1.4.1
  Last Updated: 2025-04-25
  Author: Michael Williams
  Description: Flask-based API with GPT-4 + FAISS integration,
@@ -163,18 +163,17 @@ def generate_reviewed_response(prompt):
 
     # 📏 Log length and skip review if too long
     print(f"📏 Initial GPT response length: {len(initial_response)} characters")
-    if len(initial_response) > 1500:
-        print("⚠️ Skipping review due to response length")
-        return initial_response
+    #if len(initial_response) > 1500:
+        #print("⚠️ Skipping review due to response length")
+        #return initial_response
 
     print("🔄 Reviewing GPT response...")
 
     stripped_response = initial_response.split("### Context from FAISS Index:")[0].strip()
 
     review_prompt = f"""
-You are an internal reviewer for UK police AI guidance.
 
-Your task:
+
 Please improve the following structured response with the following goals:
 
 - Ensure operational clarity and legal accuracy
