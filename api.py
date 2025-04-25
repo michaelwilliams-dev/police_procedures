@@ -41,6 +41,7 @@ import re
 import numpy as np
 import faiss
 import requests
+import textwrap
 from openai import OpenAI
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -144,16 +145,20 @@ Please generate a structured response that includes:
 
 def generate_reviewed_response(prompt):
     print("📢 Sending initial GPT prompt...")
+
     completion = client.chat.completions.create(
         model="gpt-4",
         messages=[{"role": "user", "content": prompt}],
         temperature=0,
-        max_tokens=1800  # 👈 Add this to allow longer reviewed output 2541553
+        max_tokens=1800  # Allow longer initial output
     )
     initial_response = completion.choices[0].message.content.strip()
 
-    # 🧼 Strip polite sign-offs before review
-    import re
+    # 📏 Initial GPT response length
+    print(f"📏 Initial GPT response length: {len(initial_response)} characters")
+    print("🔄 Reviewing GPT response...")
+
+    # 🧼 Strip polite sign-offs
     initial_response = re.sub(
         r'(Best regards,|Yours sincerely,|Kind regards,)[\s\S]*$',
         '',
@@ -161,43 +166,39 @@ def generate_reviewed_response(prompt):
         flags=re.IGNORECASE
     ).strip()
 
-    # 📏 Log length and skip review if too long
-    print(f"📏 Initial GPT response length: {len(initial_response)} characters")
-    #if len(initial_response) > 1500:
-        #print("⚠️ Skipping review due to response length")
-        #return initial_response
-
-    print("🔄 Reviewing GPT response...")
-
+    # ✂️ Trim FAISS context and limit input length
     stripped_response = initial_response.split("### Context from FAISS Index:")[0].strip()
-    #added 251725
-    stripped_response = stripped_response[:2500]  # 🔒 Limit to 2,500 characters for Render stability
-    review_prompt = f"""
+    stripped_response = stripped_response[:2000]  # Safe upper limit
 
+    # 🧠 Build review prompt using textwrap.dedent
+    review_prompt = textwrap.dedent(f"""\
+        Please improve the following structured response with the following goals:
 
-Please improve the following structured response with the following goals:
+        - Ensure operational clarity and legal accuracy
+        - Maintain a direct, professional tone suitable for internal reports and formal use
+        - Remove unnecessary empathy or soft greetings (e.g., “I understand”, “Thanks for your message”)
+        - Expand on any steps where further operational instruction or legal justification would be useful
+        - Ensure compliance with UK police powers, PACE, SOPs, and professional standards
 
-- Ensure operational clarity and legal accuracy
-- Maintain a direct, professional tone suitable for internal reports and formal use
-- Remove unnecessary empathy or soft greetings (e.g., “I understand”, “Thanks for your message”)
-- Expand on any steps where further operational instruction or legal justification would be useful
-- Ensure compliance with UK police powers, PACE, SOPs, and professional standards
+        The revised response must remain factual, proportionate, and aligned with UK police operational expectations and tone.
 
-The revised response must remain factual, proportionate, and aligned with UK police operational expectations and tone.
+        --- START RESPONSE ---
+        {stripped_response}
+        --- END RESPONSE ---
+    """)
 
---- START RESPONSE ---
-{stripped_response}
---- END RESPONSE ---
-"""
-
+    # 🚀 Request GPT review with tight limits
     review_completion = client.chat.completions.create(
         model="gpt-4",
         messages=[{"role": "user", "content": review_prompt}],
         temperature=0,
-        max_tokens=1200  # 👈 Add this to allow longer reviewed output 2541553
+        max_tokens=1000,  # Trimmed to avoid Render crashes
+        timeout=20        # Optional cap to prevent long hangs
     )
-    print("✅ Reviewed response complete.")
-    return review_completion.choices[0].message.content.strip()
+
+    reviewed_response = review_completion.choices[0].message.content.strip()
+    print(f"✅ Reviewed response length: {len(reviewed_response)} characters")
+    return reviewed_response
 
 def send_email_mailjet(to_emails, subject, body_text, attachments=[], full_name=None, supervisor_name=None):
     MAILJET_API_KEY = os.getenv("MJ_APIKEY_PUBLIC")
