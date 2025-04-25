@@ -192,8 +192,8 @@ def generate_reviewed_response(prompt):
         model="gpt-4",
         messages=[{"role": "user", "content": review_prompt}],
         temperature=0,
-        max_tokens=1000,  # Trimmed to avoid Render crashes
-        timeout=20        # Optional cap to prevent long hangs
+        max_tokens=700,  # Trimmed to avoid Render crashes
+        timeout=15        # Optional cap to prevent long hangs
     )
 
     reviewed_response = review_completion.choices[0].message.content.strip()
