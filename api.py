@@ -1,3 +1,37 @@
+"""
+===============================================================
+ AIVS API — Strategic Management RAG Engine
+===============================================================
+ Version: 1.4.0
+ Last Updated: 2025-04-25
+ Author: Michael Williams
+ Description: Flask-based API with GPT-4 + FAISS integration,
+              role-specific output, context PDF generation,
+              and Postmark email delivery.
+
+===============================================================
+ CHANGE LOG
+===============================================================
+ v1.4.0 — 2025-04-25
+   • Increased max_tokens to 1800 in both GPT calls
+   • Preparing to modularize growing logic
+
+ v1.3.2 — 2025-04-24
+   • Added job title-based response shaping
+   • Cleaned up ZIP filename structure with timestamp
+
+ v1.3.0 — 2025-04-23
+   • Integrated Postmark email service
+   • Separated enquirer, supervisor, HR responses
+
+ v1.2.0 — 2025-04-20
+   • Added FAISS-based context retrieval
+   • Introduced action sheet + enquirer reply JSON format
+
+ v1.0.0 — 2025-04-10
+   • Initial deployment: GPT-4 prompt, one response
+===============================================================
+"""
 import os
 import os.path
 import json
@@ -113,7 +147,8 @@ def generate_reviewed_response(prompt):
     completion = client.chat.completions.create(
         model="gpt-4",
         messages=[{"role": "user", "content": prompt}],
-        temperature=0
+        temperature=0,
+        max_tokens=1800  # 👈 Add this to allow longer reviewed output 2541553
     )
     initial_response = completion.choices[0].message.content.strip()
 
@@ -158,7 +193,8 @@ The revised response must remain factual, proportionate, and aligned with UK pol
     review_completion = client.chat.completions.create(
         model="gpt-4",
         messages=[{"role": "user", "content": review_prompt}],
-        temperature=0
+        temperature=0,
+        max_tokens=1800  # 👈 Add this to allow longer reviewed output 2541553
     )
     print("✅ Reviewed response complete.")
     return review_completion.choices[0].message.content.strip()
