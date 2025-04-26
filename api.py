@@ -2,16 +2,25 @@
 ===============================================================
  AIVS API — Strategic Management RAG Engine
 ===============================================================
- Version: 1.4.1
- Last Updated: 2025-04-25
+ Version: 1.5.0
+ Last Updated: 2025-04-26 0756
  Author: Michael Williams
  Description: Flask-based API with GPT-4 + FAISS integration,
-              role-specific output, context PDF generation,
+              discipline-sensitive response generation,
+              operational (Field Ops) and procedural (Police Procedure) pathways,
               and Postmark email delivery.
-
 ===============================================================
  CHANGE LOG
 ===============================================================
+   v1.5.0 — 2025-04-26
+   • Added discipline detection for Police Field Operations and Police Procedure
+   • Tactical brief generation for Field Ops queries
+   • Formal procedural guidance generation for Police Procedure queries
+   • Safe fallback general professional cleaning
+
+  v1.4.4 — 2025-04-26
+   • Adjusted tone of query and reply
+
  v1.4.0 — 2025-04-25
    • Increased max_tokens to 1800 in both GPT calls
    • Preparing to modularize growing logic
@@ -143,7 +152,7 @@ Please generate a structured response that includes:
 """
     return generate_reviewed_response(prompt)
 
-def generate_reviewed_response(prompt):
+def generate_reviewed_response(prompt,discipline,):
     print("📢 Sending initial GPT prompt...")
 
     completion = client.chat.completions.create(
@@ -178,7 +187,8 @@ def generate_reviewed_response(prompt):
     stripped_response = stripped_response[:2000]  # Safe upper limit
 
     # 🧠 Build review prompt using textwrap.dedent
-    review_prompt = textwrap.dedent(f"""\
+    if discipline == "Police Field Operations":
+          review_prompt = textwrap.dedent(f"""\
        You are acting as a UK police Chief Inspector preparing an urgent operational briefing.
        Rewrite the following draft as if it is a formal command document being issued to a deployment team during a live incident. Use short, direct sentences. Replace soft suggestions with clear, lawful commands. Prioritise officer safety, public protection, and legal authority.
 
@@ -197,6 +207,33 @@ def generate_reviewed_response(prompt):
        {stripped_response}
        --- END RESPONSE ---
        """)
+    elif discipline == "Police Procedure":
+          review_prompt = textwrap.dedent(f"""\
+        You are acting as a UK police Professional Standards Officer or Custody Sergeant.
+
+        Rewrite the following draft as formal, clear procedural guidance for frontline officers. Focus on correct application of UK law (PACE, Criminal Law Act, etc.), internal policies, and officer conduct.
+
+        Structure as:
+        - ISSUE SUMMARY
+        - APPLICABLE LAW
+        - PROCEDURAL GUIDANCE
+        - RISK NOTES
+
+        No command tone needed. Use neutral, professional legal explanation style.
+
+        --- START RESPONSE ---
+        {stripped_response}
+        --- END RESPONSE ---
+        """)
+
+    else:
+        review_prompt = textwrap.dedent(f"""\
+        Please clean and improve the following structured response while maintaining professional tone and factual accuracy.
+
+        --- START RESPONSE ---
+        {stripped_response}
+        --- END RESPONSE ---
+        """)
 
     # 🚀 Request GPT review with tight limits
     review_completion = client.chat.completions.create(
