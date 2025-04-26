@@ -187,9 +187,12 @@ def generate_reviewed_response(prompt):
        Structure your output as follows:
        - INCIDENT OVERVIEW
        - PRIORITY ACTIONS
+       - PRIORITY CODE (P1, P2 etc.)
+       - TIME-CRITICAL ACTIONS (5 mins, 15 mins, 30 mins)
        - OFFICER SAFETY INSTRUCTIONS
        - LEGAL BASIS (Cite relevant UK law or SOPs)
                                     
+       Avoid any civilian narrative tone. Focus on deployment.                         
        --- START RESPONSE ---
        {stripped_response}
        --- END RESPONSE ---
