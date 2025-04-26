@@ -150,7 +150,7 @@ Please generate a structured response that includes:
 2. **Action Sheet** – bullet-point steps the enquirer should follow.
 3. **Policy Notes** – cite any relevant UK policing policies, SOPs, or legal codes.
 """
-    return generate_reviewed_response(prompt)
+    return generate_reviewed_response(prompt,discipline)
 
 def generate_reviewed_response(prompt,discipline,):
     print("📢 Sending initial GPT prompt...")
