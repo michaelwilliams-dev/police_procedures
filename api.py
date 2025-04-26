@@ -179,17 +179,17 @@ def generate_reviewed_response(prompt):
 
     # 🧠 Build review prompt using textwrap.dedent
     review_prompt = textwrap.dedent(f"""\
-       Rewrite the following report as an urgent operational police action briefing, suitable for deployment teams. 
+       You are acting as a UK police Chief Inspector preparing an urgent operational briefing.
+       Rewrite the following draft as if it is a formal command document being issued to a deployment team during a live incident. Use short, direct sentences. Replace soft suggestions with clear, lawful commands. Prioritise officer safety, public protection, and legal authority.
 
        Use direct, command-style language. Avoid soft language ("thank you", "please", "ensure") and focus on clear tactical orders ("Establish", "Detain", "Secure", "Arrest", "Preserve evidence").
 
-       Structure the briefing into:
-       - **Incident Summary**
-       - **Immediate Action Orders**
-       - **Officer Safety Considerations**
-       - **Legal Grounds (with references)**
-
-
+       Structure your output as follows:
+       - INCIDENT OVERVIEW
+       - PRIORITY ACTIONS
+       - OFFICER SAFETY INSTRUCTIONS
+       - LEGAL BASIS (Cite relevant UK law or SOPs)
+                                    
        --- START RESPONSE ---
        {stripped_response}
        --- END RESPONSE ---
