@@ -12,7 +12,7 @@
 ===============================================================
  CHANGE LOG
 ===============================================================
-   v1.5.0 — 2025-04-28 Prompt Change to Priority Guidance
+   v1.5.0 — 2025-04-28 Prompt Change to Priority Guidance (2)
    v1.5.0 — 2025-04-26
    • Added discipline detection for Police Field Operations and Police Procedure
    • Tactical brief generation for Field Ops queries
@@ -190,24 +190,29 @@ def generate_reviewed_response(prompt,discipline,):
     # 🧠 Build review prompt using textwrap.dedent
     if discipline == "Police Field Operations":
           review_prompt = textwrap.dedent(f"""\
-       You are acting as a UK police Chief Inspector preparing an urgent operational briefing.
+       You are acting as a UK operational police officer preparing an urgent briefing.
+       
        Priority Guidance:
        - When answering queries about stop and search, prioritize using Section 1 of the Police and Criminal Evidence Act 1984 (PACE).
        - Only refer to Policing and Crime Act 2017 Section 47C/47G if specifically about property seizure.
-       - Keep answers clear, lawful, and officer operational.     
-       Rewrite the following draft as if it is a formal command document being issued to a deployment team during a live incident. Use short, direct sentences. Replace soft suggestions with clear, lawful commands. Prioritise officer safety, public protection, and legal authority.
+       - Focus on tactical deployment actions: what the officer must DO and SAY.
+       - Keep answers clear, lawful, and officer operational.
+       - Write in short, direct sentences suitable for operational use.
+       - Avoid soft or cautious civilian phrasing.
+       - Emphasize lawful authority, officer safety, and public protection.                                           
+       
+       Rewrite the following draft as if it is a formal operational briefing being issued to a frontline deployment team. Use direct tactical orders. Replace soft suggestions with clear, lawful commands ("Establish", "Detain", "Secure", "Arrest", "Preserve evidence").
 
        Use direct, command-style language. Avoid soft language ("thank you", "please", "ensure") and focus on clear tactical orders ("Establish", "Detain", "Secure", "Arrest", "Preserve evidence").
 
-       Structure your output as follows:
-       - INCIDENT OVERVIEW
-       - PRIORITY ACTIONS
-       - PRIORITY CODE (P1, P2 etc.)
-       - TIME-CRITICAL ACTIONS (5 mins, 15 mins, 30 mins)
-       - OFFICER SAFETY INSTRUCTIONS
-       - LEGAL BASIS (Cite relevant UK law or SOPs)
-                                    
-       Avoid any civilian narrative tone. Focus on deployment.                         
+       Structure using clear headings:
+          - LEGAL POWER
+          - PROCEDURE
+          - IMPORTANT NOTES
+          - SPECIAL CASES
+          - EXAMPLE WORDING TO USE WITH SUSPECTS
+          - EXAMPLE WORDING TO USE WITH PUBLIC )              
+       Avoid any civilian narrative tone. Focus on immediate deployment needs.                         
        --- START RESPONSE ---
        {stripped_response}
        --- END RESPONSE ---
