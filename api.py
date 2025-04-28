@@ -12,6 +12,7 @@
 ===============================================================
  CHANGE LOG
 ===============================================================
+   v1.5.0 — 2025-04-28 Prompt Change to Priority Guidance
    v1.5.0 — 2025-04-26
    • Added discipline detection for Police Field Operations and Police Procedure
    • Tactical brief generation for Field Ops queries
@@ -190,6 +191,10 @@ def generate_reviewed_response(prompt,discipline,):
     if discipline == "Police Field Operations":
           review_prompt = textwrap.dedent(f"""\
        You are acting as a UK police Chief Inspector preparing an urgent operational briefing.
+       Priority Guidance:
+       - When answering queries about stop and search, prioritize using Section 1 of the Police and Criminal Evidence Act 1984 (PACE).
+       - Only refer to Policing and Crime Act 2017 Section 47C/47G if specifically about property seizure.
+       - Keep answers clear, lawful, and officer operational.     
        Rewrite the following draft as if it is a formal command document being issued to a deployment team during a live incident. Use short, direct sentences. Replace soft suggestions with clear, lawful commands. Prioritise officer safety, public protection, and legal authority.
 
        Use direct, command-style language. Avoid soft language ("thank you", "please", "ensure") and focus on clear tactical orders ("Establish", "Detain", "Secure", "Arrest", "Preserve evidence").
